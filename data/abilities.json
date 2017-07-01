@@ -1,0 +1,19 @@
+var g_abilities = [
+	{
+		"name": "Attack",
+		"castTime": 1.15,
+		"cooldownTime": 1.85,
+		"range": 500,
+		"effectsOnCast": [
+				{
+						"effectType": "damage",
+						"damageType": "piercing",
+						"targetStat": "hp_curr",
+						"valueBase": 2,
+						"valueStat": "str",
+						"valueMultiplier": 2,
+						"react": "shake"
+				}
+		]
+	}
+];
