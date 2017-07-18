@@ -68,6 +68,9 @@ class Vec2D {
 	getVecSub( vec2 ) {
 		return new Vec2D( this.x - vec2.x, this.y - vec2.y );
 	}
+	getDotProd( vec2 ) {
+		return ((this.x*vec2.x) + (this.y*vec2.y))
+	}
 	
 	getDistSqFromVec( vec2 ) {
 		var delta = vec2.getVecSub(this);
@@ -137,40 +140,84 @@ class Segment2D {
 		this.e = endVec;
 	}
 	
+	toString() {
+		return this.s.toString() + " -> " + this.e.toString()
+	}
+
+	getNormalVec() {
+		var normalVec = this.e.getVecSub(this.s)
+		normalVec.rotate(90 * (Math.PI / 180))
+		return normalVec.getUnitized()
+	}
+
+	getMagnitude() {
+		var distVec = this.e.getVecSub(this.s)
+		return distVec.getMag()
+	}
+	
 	SegmentWithValues( x1,y1, x2,y2 ) {
 		return new Segment2D( new Vec2D(x1,y1), new Vec2D(x2,y2) );
 	}
 	
-	isSegmentIntersected( bySegment, outIntersectionPt ) {
-		return Segment2D.SegmentIntersectsSegment( this.s, this.e, bySegment.s, bySegment.e, outIntersectionPt); 
+	// returns Vec2D intersection if intersected, or null if not
+	getSegmentIntersection( bySegment ) {
+		return Segment2D.SegmentIntersectsSegment( this.s, this.e, bySegment.s, bySegment.e); 
 	}
+
+	// given a wall segment, a path segment, and an intersecting point
+	//  returns new path endpoint Vec2D after reflection
+	static GetReflection(wallSegment, pathSegment, intersectVec) {
+
+  //0) get 'normal' vector of wall segment
+  var wallNormal = wallSegment.getNormalVec()
+
+  //1) get vector from start to collision
+  var incomingVec = intersectVec.getVecSub(pathSegment.s)
+
+  // A) formula: vector - (normal * (2 * Vector2.Dot(vector, normal)));
+
+  var ns = incomingVec.getVecSub( wallNormal.getScalarMult( 2 * incomingVec.getDotProd(wallNormal) ) )
+
+  var reflectedUnitVec = ns.getUnitized()
+
+  //2) get magnitude of pathSegment
+  var totalMag = pathSegment.getMagnitude()
+  //3) get magnitude of incoming vector
+  var incomingMag = incomingVec.getMag()
+  //4) multiply reflectedUnitVec by totalMag - incomingMag
+  var remainingMag = totalMag - incomingMag
+  var resultVec = reflectedUnitVec.scalarMult(remainingMag)
+  
+  var result = intersectVec.getVecAdd( resultVec  )
+  //console.log("vel magnitude " + totalMag)
+  //console.log("dist to impact " + incomingMag)
+  //console.log("left over distance " + remainingMag)
+  //console.log("result mag " + resultVec.getMag())
+  return result
+}
 	
 	/// a1 is line1 start, a2 is line1 end, b1 is line2 start, b2 is line2 end
-	/// returns true if intersect, sets outIntersectionPt to point of intersect
-	SegmentIntersectsSegment( a1, a2, b1, b2, outIntersectionPt)
+	/// returns Vec2D intersection if intersected, or null if not
+	static SegmentIntersectsSegment( a1, a2, b1, b2)
 	{
-	    outIntersectionPt = new Vec2D();
-	
 	    var b = a2.getVecSub(a1);
 	    var d = b2.getVecSub(b1);
 	    var bDotDPerp = b.x * d.y - b.y * d.x;
 	
 	    // if b dot d == 0, it means the lines are parallel so have infinite intersection points
 	    if (bDotDPerp == 0)
-	        return false;
+	        return null;
 	
 	    var c = b1.getVecSub(a1);
 	    var t = (c.x * d.y - c.y * d.x) / bDotDPerp;
 	    if (t < 0 || t > 1)
-	        return false;
+	        return null;
 	
 	    var u = (c.x * b.y - c.y * b.x) / bDotDPerp;
 	    if (u < 0 || u > 1)
-	        return false;
+	        return null;
 	
-	    outIntersectionPt = a1.getVecAdd( b.getScalarMult(t) ) ;
-	
-	    return true;
+	    return a1.getVecAdd( b.getScalarMult(t) ) ;
 	}
 }
 
