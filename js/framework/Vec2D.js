@@ -9,6 +9,13 @@ class Vec2D {
 		this.x = posObj.x;
 		this.y = posObj.y;
 	}
+	toJson() {
+		return { "x":this.x, "y":this.y}
+	}
+	loadJson(json) {
+		this.x = json.x || 0
+		this.y = json.y || 0
+	}
 	clone() {
 		return new Vec2D( this.x, this.y );
 	}
@@ -139,6 +146,13 @@ class Segment2D {
 		this.s = startVec;
 		this.e = endVec;
 	}
+	toJson() {
+		return {"s":this.s.toJson(), "e":this.e.toJson()}
+	}
+	loadJson(json) {
+		this.s = new Vec2D().loadJson(json.s)
+		this.e = new Vec2D().loadJson(json.e)
+	}
 	
 	toString() {
 		return this.s.toString() + " -> " + this.e.toString()
@@ -234,6 +248,16 @@ class Rect2D {
 	static get BOTTOM() { return 2; }
 	static get LEFT() { return 3; }
 	
+	toJson() {
+		return {"x":this.x, "y":this.y, "w":this.w, "h":this.h}
+	}
+	loadJson(json) {
+		this.x = json.x || 0
+		this.y = json.y || 0
+		this.w = json.w || 0
+		this.h = json.h || 0
+	}
+
 	toString() {
 		return this.x.toFixed(4) + "," + this.y.toFixed(4) + ":" + this.w.toFixed(4) + "x" + this.h.toFixed(4) ;
 	}

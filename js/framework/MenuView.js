@@ -37,6 +37,28 @@ class MenuView extends TableView
 
     var bgFillStyle = options.backgroundFill || "rgb(255,255,255)";
     this.setRect(0,0, bgFillStyle);
+
+    if (this.serializable) {
+      this.menuOptionsData = options
+    }
+  }
+  toJson() {
+    if (!this.serializable) {
+			console.error("MenuView - trying to serialize MenuView when seralizable == false")
+			return {}
+		}
+
+    var json = super.toJson()
+    json.classType = "MenuView"
+    json.options = this.menuOptionsData
+    //w, h  handled by super
+    //sizeToFit handled by super
+
+    return json
+  }
+  loadJson(json) {
+    //NOTE: expects json. options, w, h already sent to constructor
+    super.loadJson(json)
   }
 
 

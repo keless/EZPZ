@@ -4,8 +4,10 @@
 //scene node heirarchy of sprites/animations
 
 class NodeView extends BaseListener {
-	constructor( ) {
+	constructor() {
 		super();
+
+		this.serializable = Config ? (Config.canSerializeNodeViews || false) : false;
 		this.pos = new Vec2D();
 		this.size = new Vec2D();
 		this.rotation = 0;
@@ -28,8 +30,132 @@ class NodeView extends BaseListener {
 		this.isDraggable = false;
 		this.onClickCallChildren = true;
 		this.onClickEatClicks = true;
+
+		if (this.serializable) {
+			this.serializeData = []
+		}
 	}
 	
+	toJson() {
+		if (!this.serializable) {
+			console.error("NodeView - trying to serialize NodeView when seralizable == false")
+			return {}
+		}
+
+		var json = {}
+		json.classType = "NodeView"
+		json.pos = this.pos.toJson()
+		json.size = this.size.toJson()
+		if (this.rotation != 0) {
+			json.rotation = this.rotation
+		}
+		if (this.scale != 1) {
+			json.scale = this.scale
+		}
+		if (this._visible != true) {
+			json.visible = this._visible
+		}
+		if (this.alpha != 1.0) {
+			json.alpha = this.alpha
+		}
+		if (this.pixelated != false) {
+			json.pixelated = this.pixelated
+		}
+		if (this.isDraggable != false) {
+			json.drag = this.isDraggable
+		}
+		if (this.onClickCallChildren != true) {
+			json.clickChildren = this.onClickCallChildren
+		}
+		if (this.onClickEatClicks != true) {
+			json.eatClicks = this.onClickEatClicks
+		}
+
+		if (this.pUser != null) {
+			console.warn("NodeView.toJson() - cant serialize pUser")
+		}
+		if (this.fnOnClick != null) {
+			console.warn("NodeView.toJson() - cant serialize fnOnClick")
+		}
+
+		if (this.actions.length > 0) {
+			console.warn("NodeView.toJson() - cant serialize actions.. yet")
+		}
+
+		json.serializeData = this.serializeData
+
+		if (this.children.length > 0) {
+			var children = []
+			for (var child of this.children) {
+				children.push(child.toJson())
+			}
+			json.children = children
+		}
+		
+		return json
+	}
+	loadJson(json) {
+		// loadJson is called as super from sub-classes, so suppress this warning
+		//if (json.classType != "NodeView") {
+		//	console.warn("NodeView.loadJson - loading json that is not of classType NodeView!")
+		//}
+
+		this.pos = new Vec2D(json.pos.x, json.pos.y)
+		this.size = new Vec2D(json.size.x, json.size.y)
+		this.rotation = json.rotation || 0
+		this.scale = json.scale || 1
+		this._visible = json.visible || true
+		this.alpha = json.alpha || 1.0
+		this.pixelated = json.pixelated || false
+		this.isDraggable = json.drag || false
+		this.onClickCallChildren = json.clickChildren || true
+		this.onClickEatClicks = json.eatClicks || true
+
+		this._loadSerializeData(json.serializeData || [])
+		this._loadChildrenJson(json.children || [])
+	}
+	_loadSerializeData(jsonArr) {
+		for(var data of jsonArr) {
+			switch(data.call) {
+				case "setCircle": this.setCircle(data.radius, data.fillStyle, data.strokeStyle); break;
+				case "setRect": this.setRect(data.w, data.h, data.fillStyle); break;
+				case "setPolygon": this.setPolygon(data.arrVerts, data.fill, data.stroke, data.strokeSize); break;
+				case "setImage": this.setImage(data.image); break;
+				case "setImageStretch": this.setImageStretch(data.image, data.x, data.y, data.w, data.h); break;
+				case "setSprite": this.setSprite(data.sprite); break;
+				case "setLabel": this.setLabel(data.labelText, data.labelFont, data.labelStyle, data.multiLine); break;
+				case "setLabelWithOutline": this.setLabelWithOutline(data.labelText, data.labelFont, data.labelStyle, data.outlineStyle, data.size, data.multiLine); break;
+				case "setTextInput": this.setTextInput(data.w, data.h); break;
+			}
+		}
+	}
+	_loadChildrenJson(jsonArr) {
+		this.children.length = 0
+		for(var data of jsonArr) {
+			var child = null
+			switch(data.classType) {
+				case "NodeView":
+					child = new NodeView();
+				break;
+				case "ButtonView":
+					child = new ButtonView(data.btnID, data.sprite, data.label, data.labelFont, data.labelStyle);
+				break;
+				case "MenuView":
+					child = new MenuView(data.options, data.w, data.h);
+				break;
+				case "TableView":
+					child = new TableView(data.w, data.h, data.sizeToFit);
+				break;
+				default:
+					console.warn("NodeView _loadChildrenJson unknown classType " + data.classType)
+					continue; //skip this child
+				break;
+			}
+			child.loadJson(data)
+			this.children.push(child)
+		}
+	}
+
 	Destroy() {
     
     if(this.textInput) {
@@ -69,6 +195,10 @@ class NodeView extends BaseListener {
 	}
 	
 	setCircle( radius, fillStyle, strokeStyle ) {
+		if (this.serializable) {
+			this.serializeData.push({"call":"setCircle", "radius":radius, "fillStyle":fillStyle, "strokeStyle":strokeStyle })
+		}
+
 		if(this.circleRadius) {
 			console.error("NodeView: already has a circle, abort!");
 			return;
@@ -82,6 +212,9 @@ class NodeView extends BaseListener {
 		});
 	}
 	setRect( w, h, fillStyle ) {
+		if (this.serializable) {
+			this.serializeData.push({"call":"setRect", "w":w, "h":h, "fillStyle":fillStyle})
+		}
 		this.size.setVal( Math.max(this.size.x, w), Math.max(this.size.y, h));
 		var self = this;
 		this.fnCustomDraw.push(function(gfx, x,y, ct){
@@ -91,6 +224,9 @@ class NodeView extends BaseListener {
 		});
 	}
 	setPolygon( arrVerts, fill, stroke, strokeSize ) {
+		if (this.serializable) {
+			this.serializeData.push({"call":"setPolygon", "arrVerts":arrVerts, "fill":fill, "stroke":stroke, "strokeSize":strokeSize})
+		}
 		var self = this;
 		this.fnCustomDraw.push(function(gfx,x,y,ct) {
 			if(self.alpha != 1.0) gfx.setAlpha(self.alpha);
@@ -99,6 +235,13 @@ class NodeView extends BaseListener {
 		});
 	}
 	setImage( image ) {
+		if (this.serializable) {
+			if (isString(image)) {
+				this.serializeData.push({"call":"setImage", "image":image})
+			}else {
+				console.warn("NodeView - cannot serialize setImage with non-string image parameter")
+			}
+		}
 		if( isString(image) ) {
 			var RP = Service.Get("rp");
 			image = RP.getImage(image); //load image url into image resource
@@ -119,6 +262,13 @@ class NodeView extends BaseListener {
 		});
 	}
 	setImageStretch( image, x,y, w,h ) {
+		if (this.serializable) {
+			if (isString(image)) {
+				this.serializeData.push({"call":"setImageStretch", "image":image, "x":x,"y":y, "w":w,"h":h})
+			}else {
+				console.warn("NodeView - cannot serialize setImageStretch with non-string image parameter")
+			}
+		}
 		if( isString(image) ) {
 			var RP = Service.Get("rp");
 			image = RP.getImage(image); //load image url into image resource
@@ -139,6 +289,14 @@ class NodeView extends BaseListener {
 		});
 	}
 	setSprite( sprite, spriteFrame, hFlip ) {		
+		if (this.serializable) {
+			if (isString(sprite)) {
+				this.serializeData.push({"call":"setSprite", "sprite":sprite, "spriteFrame":spriteFrame, "hFlip":hFlip})
+			}else {
+				console.warn("NodeView - cannot serialize setSprite with non-string image parameter")
+			}
+		}
+
 		hFlip = hFlip || false;
 		
 		if( isString(sprite) ) {
@@ -162,6 +320,9 @@ class NodeView extends BaseListener {
 		});
 	}
 	setAnim( anim ) {
+		if (this.serializable) {
+			console.warn("NodeView - cannot serialize setAnim")
+		}
 		if(this.animInstance) {
 			console.error("NodeView: already has an anim, abort!");
 			return;			
@@ -192,6 +353,9 @@ class NodeView extends BaseListener {
 		}
 	}
 	setLabel( labelText, labelFont, labelStyle, multiLine ) {
+		if (this.serializable) {
+			this.serializeData.push({"call":"setLabel", "labelText":labelText, "labelFont":labelFont, "labelStyle":labelStyle, "multiLine":multiLine})
+		}
 		if(labelText == undefined || labelText == null) return;
 		if(this.labelText) {
 			console.error("NodeView: already has a label, abort!");
@@ -211,6 +375,9 @@ class NodeView extends BaseListener {
 		});
 	}
 	setLabelWithOutline( labelText, labelFont, labelStyle, outlineStyle, size, multiLine ) {
+		if (this.serializable) {
+			this.serializeData.push({"call":"setLabelWithOutline", "labelText":labelText, "labelFont":labelFont, "labelStyle":labelStyle, "outlineStyle":outlineStyle, "size":size, "multiLine":multiLine})
+		}
 		if(labelText == undefined || labelText == null) return;
 		if(this.labelText) {
 			console.error("NodeView: already has a label, abort!");
@@ -248,7 +415,11 @@ class NodeView extends BaseListener {
 		this.labelStyle = style;
 	}
   
-  	setTextInput( w, h ) {
+  setTextInput( w, h ) {
+		if (this.serializable) {
+			this.serializeData.push({"call":"setTextInput", "w":w, "h":h})
+		}
+
 		if(this.textInput) {
 			console.error("NodeView: already has a text input, abort!");
 			return;	
@@ -296,6 +467,10 @@ class NodeView extends BaseListener {
   
 	///fn(gfx, x,y, ct)
 	addCustomDraw( fn ) {
+		if (this.serializable) {
+			console.warn("NodeView - cannot serialize addCustomDraw")
+		}
+
 		this.fnCustomDraw.push(fn);
 	}
 	

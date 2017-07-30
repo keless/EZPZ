@@ -5,30 +5,48 @@ class ButtonView extends NodeView {
 	static get STATE_PRESSED() { return 1 }
 	
 	constructor(btnID, sprite, label, labelFont, labelStyle, onClickData ) {
-		labelFont = labelFont || "10px Arial";
-		labelStyle = labelStyle || "#CCCCCC";
-		super();
+		super()
 
-		this.state = ButtonView.STATE_NORMAL;
-		this.disabled = false;
-		
-		this.size = new Vec2D();
+		this.state = ButtonView.STATE_NORMAL
+		this.disabled = false
     
-    this.evt = onClickData || {};
-    this.evt["evtName"] = btnID;
-
-		if(isString(sprite)) {
-			var RP = Service.Get("rp");
-			sprite = RP.getSprite(sprite);
-		}
+    this.evt = onClickData || {}
+    this.evt["evtName"] = btnID
 		
 		if( sprite ) {
-			this.setSprite( sprite );
+			this.setSprite( sprite )
 		}
 		
-		this.setLabel( label, labelFont, labelStyle );
+		if (label) {
+			labelFont = labelFont || "10px Arial"
+			labelStyle = labelStyle || "#CCCCCC"
+			this.setLabel( label, labelFont, labelStyle )
+		}
 		
-		this.unPressHandler = null;
+		this.unPressHandler = null
+	}
+	toJson() {
+		if (!this.serializable) {
+			console.error("ButtonView - trying to serialize ButtonView when seralizable == false")
+			return {}
+		}
+
+		var json = super.toJson()
+		json.classType = "ButtonView"
+		json.btnID = this.evt["evtName"]
+		if (this.disabled) {
+			json.disabled = this.disabled
+		}
+		//sprite - handled by super
+		//label - handled by super
+
+		return json
+	}
+	loadJson(json) {
+		//NOTE: expects json. btnID, sprite, label, labelFont, labelStyle were all sent to constructor already
+		super.loadJson(json)
+
+		this.disabled = json.disabled || false
 	}
 	
 	Destroy() {
@@ -39,7 +57,7 @@ class ButtonView extends NodeView {
 	
 	setSprite(sprite) {
 		super.setSprite(sprite);
-		this.size.setVal(sprite.getWidth(), sprite.getHeight());
+		this.size.setVal(this.sprite.getWidth(), this.sprite.getHeight());
 	}
 	
 	Draw( gfx, x, y, ct ) {

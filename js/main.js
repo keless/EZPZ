@@ -28,13 +28,5 @@ var game_create = function()
 			];
 	stateController.gotoState("loading", [resources, "menu"]);
 	
-	/*
-	EventBus.ui.addListener("loadingComplete", function(e){
-		//app.state.gotoState(GameStateController.STATE_HANGAR); //STATE_FLYING
-		//xxx todo
-		EventBus.ui.removeListener("loadingComplete", this);
-	});
-	*/
-	
 	app.Play();
 };
