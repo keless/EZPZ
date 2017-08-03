@@ -23,13 +23,13 @@ class TableView extends NodeView {
 		
 		this.direction = TableView.VERTICAL;
 	}
-  toJson() {
+  toJson(ignoreChildren) {
     if (!this.serializable) {
 			console.error("TableView - trying to serialize TableView when seralizable == false")
 			return {}
 		}
 
-		var json = super.toJson()
+		var json = super.toJson(ignoreChildren)
 		json.classType = "TableView"
 		json.padding = this.padding
 		json.align = this.align
@@ -41,9 +41,9 @@ class TableView extends NodeView {
 		return json
   }
   loadJson(json) {
-		//NOTE: expects json. w, h, sizeToFit already sent to constructor
 		super.loadJson(json)
-		
+		this.sizeToFit = json.sizeToFit
+		this.size.setVal(json.w,json.h)
 		this.padding = json.padding
 		this.align = json.align
 		this.direction = json.direction

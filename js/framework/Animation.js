@@ -140,6 +140,11 @@ class AnimationInstance {
  *  without added complexity
  */
 class FourPoleAnimation extends Animation {
+	static get DIR_N() { return 0 }
+	static get DIR_E() { return 1 }
+	static get DIR_S() { return 2 }
+	static get DIR_W() { return 3 }
+
 	constructor() {
 		super();
 		this.directions = ["N", "E", "S", "W"];

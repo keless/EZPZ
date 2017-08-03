@@ -11,8 +11,15 @@ class ButtonView extends NodeView {
 		this.disabled = false
     
     this.evt = onClickData || {}
-    this.evt["evtName"] = btnID
+    this.evt["evtName"] = btnID || "btnID"
 		
+		if (sprite || label) {
+			this._init(sprite, label, labelFont, labelStyle)
+		}
+		
+		this.unPressHandler = null
+	}
+	_init(sprite, label, labelFont, labelStyle) {
 		if( sprite ) {
 			this.setSprite( sprite )
 		}
@@ -22,16 +29,15 @@ class ButtonView extends NodeView {
 			labelStyle = labelStyle || "#CCCCCC"
 			this.setLabel( label, labelFont, labelStyle )
 		}
-		
-		this.unPressHandler = null
 	}
-	toJson() {
+
+	toJson(ignoreChildren) {
 		if (!this.serializable) {
 			console.error("ButtonView - trying to serialize ButtonView when seralizable == false")
 			return {}
 		}
 
-		var json = super.toJson()
+		var json = super.toJson(ignoreChildren)
 		json.classType = "ButtonView"
 		json.btnID = this.evt["evtName"]
 		if (this.disabled) {
@@ -43,10 +49,10 @@ class ButtonView extends NodeView {
 		return json
 	}
 	loadJson(json) {
-		//NOTE: expects json. btnID, sprite, label, labelFont, labelStyle were all sent to constructor already
 		super.loadJson(json)
-
+		this.evt["evtName"] = json.btnID
 		this.disabled = json.disabled || false
+		this._init(json.sprite, json.label, json.labelFont, json.labelStyle)
 	}
 	
 	Destroy() {

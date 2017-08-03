@@ -44,5 +44,10 @@ class EditorStateView extends BaseStateView {
 
   updateJsonOutput() {
     window.updateJsonOutput()
+    window.updateTreeOutput()
+  }
+
+  updateInspector() {
+    
   }
 }

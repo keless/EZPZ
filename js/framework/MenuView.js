@@ -16,9 +16,13 @@ class MenuView extends TableView
    *   }
    */
   constructor( options, w, h ) {
-    super(w || 0, h || 0);
-    this.sizeToFit = true;
+    super(w || 0, h || 0, true);
 
+    if (options) {
+      this._init(options)
+    }
+  }
+  _init(options) {
     if(options.title) {
       //add a heading
       var titleNode = new NodeView();
@@ -42,13 +46,13 @@ class MenuView extends TableView
       this.menuOptionsData = options
     }
   }
-  toJson() {
+  toJson(ignoreChildren) {
     if (!this.serializable) {
 			console.error("MenuView - trying to serialize MenuView when seralizable == false")
 			return {}
 		}
 
-    var json = super.toJson()
+    var json = super.toJson(ignoreChildren)
     json.classType = "MenuView"
     json.options = this.menuOptionsData
     //w, h  handled by super
@@ -57,8 +61,8 @@ class MenuView extends TableView
     return json
   }
   loadJson(json) {
-    //NOTE: expects json. options, w, h already sent to constructor
     super.loadJson(json)
+    this._init(json.options)
   }
 
 

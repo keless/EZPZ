@@ -63,12 +63,28 @@
 <center>
   <table><tr>
     <td><canvas id="content" width="1024" height="800" style="border:1px solid #000000;" tabindex="1"></canvas></td>
-    <td><form onSubmit="return false;">
-      <textarea id="jsonOutput" cols=25 rows=15></textarea>
-      <br>
-      <input type="button" value="Load" onClick="window.editorLoad()"></input>
-      <input type="button" value="Reset" onClick="window.editorReset()"></input>
-      <input type="button" value="Clipboard" onClick="window.editorCopyToClipboard()"></input>
+    <td valign="top"><form onSubmit="return false;">
+        <select id="nodeLibrary">
+            <option>Node</option>
+            <option>Button</option>
+            <option>Sprite</option>
+            <option>Image</option>
+            <option>Rectangle</option>
+            <option>Circle</option>
+        </select>
+        <input type="button" onclick="window.editorCreateNode()" value="Create"></input>
+        <hr>
+        <div id="nodeTree"></div>
+        <hr>
+        <div id="divInspector"></div>
+    </form>
+    <hr>
+    <form onSubmit="return false;">
+        <textarea id="jsonOutput" cols=35 rows=5 spellcheck="false" height="100%"></textarea>
+        <br>
+        <input type="button" value="Load" onClick="window.editorLoad()"></input>
+        <input type="button" value="Reset" onClick="window.editorReset()"></input>
+        <input type="button" value="Clipboard" onClick="window.editorCopyToClipboard()"></input>
     </form></td>
   </tr></table>
 </center>

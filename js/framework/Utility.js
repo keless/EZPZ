@@ -5,6 +5,10 @@ function getRand(min, max) {
   return ~~(Math.random() * (max - min + 1)) + min
 }
 
+function radToDeg( rad ) {
+  return (rad *180)/Math.PI
+}
+
 //get dictionary length
 function dicLength( dictionary ) {
 	return Object.keys(dictionary).length;

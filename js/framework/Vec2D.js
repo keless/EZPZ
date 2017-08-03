@@ -331,6 +331,14 @@ class Rect2D {
 		this.h = r2d.h;
 		return this;
 	}
+
+	setVal(x, y, w, h) {
+		this.x = x
+		this.y = y
+		this.w = w
+		this.h = h
+		return this
+	}
 	
 	setSizeVec( v2d ) {
 		this.w = v2d.x;

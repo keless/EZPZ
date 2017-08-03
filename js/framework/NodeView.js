@@ -36,11 +36,13 @@ class NodeView extends BaseListener {
 		}
 	}
 	
-	toJson() {
+	toJson( ignoreChildren ) {
 		if (!this.serializable) {
 			console.error("NodeView - trying to serialize NodeView when seralizable == false")
 			return {}
 		}
+
+		ignoreChildren = ignoreChildren || false
 
 		var json = {}
 		json.classType = "NodeView"
@@ -84,7 +86,7 @@ class NodeView extends BaseListener {
 
 		json.serializeData = this.serializeData
 
-		if (this.children.length > 0) {
+		if (this.children.length > 0 && !ignoreChildren) {
 			var children = []
 			for (var child of this.children) {
 				children.push(child.toJson())
@@ -100,6 +102,8 @@ class NodeView extends BaseListener {
 		//	console.warn("NodeView.loadJson - loading json that is not of classType NodeView!")
 		//}
 
+		this._sterilize()
+		
 		this.pos = new Vec2D(json.pos.x, json.pos.y)
 		this.size = new Vec2D(json.size.x, json.size.y)
 		this.rotation = json.rotation || 0
@@ -113,6 +117,28 @@ class NodeView extends BaseListener {
 
 		this._loadSerializeData(json.serializeData || [])
 		this._loadChildrenJson(json.children || [])
+	}
+	_sterilize() {
+		this.children.length = 0
+		this.fnCustomDraw.length = 0
+		this.actions.length = 0
+
+		if (this.serializable) {
+			this.serializeData = []
+		}
+
+		delete this.circleRadius
+		delete this.image
+		delete this.sprite
+		delete this.spriteFrame
+		delete this.hFlip
+		delete this.labelMultiLine
+		delete this.labelText
+		delete this.labelStyle
+		delete this.labelFont
+		delete this.labelOutlineSize
+		delete this.labelOutlineStyle
+		delete this.textInput
 	}
 	_loadSerializeData(jsonArr) {
 		for(var data of jsonArr) {
@@ -180,6 +206,24 @@ class NodeView extends BaseListener {
     }
   }
 	
+	getParent() {
+		return this.parent
+	}
+	getChildIdx( child ) {
+		for (var i=0; i<this.children.length; i++) {
+			if (this.children[i] == child) return i
+		}
+		return -1
+	}
+	getChildByIdx(idx) {
+		if (idx < 0 || idx >= this.children.length) {
+			return null
+		} 
+		return this.children[idx]
+	}
+	getNumChildren() {
+		return this.children.length
+	}
 	get worldRotation() {
 		if(this.parent) {
 			return this.parent.worldRotation + this.rotation;
