@@ -15,6 +15,9 @@ function game_create()
 {
 	var app = new Application("UIEditor", "content");
   window.app = app;
+
+  var RP = Service.Get("rp")
+  RP.baseURL = "../"
   
   window.jsonOutput = document.getElementById("jsonOutput")
   window.nodeTree = document.getElementById("nodeTree")
