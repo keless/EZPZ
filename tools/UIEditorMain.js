@@ -57,7 +57,7 @@ window.updateTreeOutput = function() {
 function _rBuildTreeString(json, idxString) {
   var className = json.classType
 
-  var result = '<div onclick="window.treeNodeClicked(\''+idxString+'\', event)">' + className + '</div>'
+  var result = '<div id="'+idxString+'" onclick="window.treeNodeClicked(\''+idxString+'\')">' + className + '</div>'
   
   if (json.children && json.children.length > 0) {
     result += "<ol>"
@@ -74,8 +74,24 @@ function _rBuildTreeString(json, idxString) {
 
   return result
 }
+function _generateIdxStringFromNode(node, append) {
+  var parent = node.getParent()
+  if(parent == null) {
+    //root node
+    return "_," + append
+  }
+
+  var idx = parent.getChildIdx(node)
+  if (append) {
+    append = idx + "," + append
+  } else {
+    append = idx + ""
+  }
+
+  return _generateIdxStringFromNode(parent, append)
+}
 //idxString format  "_,0,3,2" == root.children[0].children[3].children[2]
-window.treeNodeClicked = function(idxString, event) {
+window.treeNodeClicked = function(idxString) {
   var idxArr = idxString.split(",")
   idxArr.shift()
 
@@ -108,8 +124,11 @@ window.setInspector = function(viewNode) {
   if (window.currHighlight != null) {
     window.currHighlight.classList.remove('highlight')
   }
-  window.currHighlight = event.target
-  window.currHighlight.classList.add('highlight')
+  var div = document.getElementById( _generateIdxStringFromNode(viewNode) )
+  if (div) {
+    window.currHighlight = div
+    window.currHighlight.classList.add('highlight')
+  }
 
   window.divInspector.innerHTML = _buildInspectorHTML(viewNode)
   window.currentInspectorNode = viewNode
@@ -172,14 +191,18 @@ function _setRectFromInput(rect, inputValue) {
   var h = parseFloat(posSplit[3])
   rect.setVal(x, y, w, h)
 }
+function _updateNodeView(nodeView) {
+  window.updateTreeOutput()
+  window.updateJsonOutput()
+  window.setInspector(nodeView)
+}
 window.doSiblingShift = function() {
   var nodeView = window.currentInspectorNode
   var parent = nodeView.getParent()
   nodeView.removeFromParent()
   parent.addChild(nodeView)
 
-  window.updateTreeOutput()
-  window.updateJsonOutput()
+  _updateNodeView(nodeView)
 }
 window.doParentShift = function(directionUp) {
   var nodeView = window.currentInspectorNode
@@ -220,9 +243,8 @@ window.doParentShift = function(directionUp) {
   }
 
   if (needsRefresh) {
-    window.setInspector(nodeView)
-    window.updateTreeOutput()
-    window.updateJsonOutput()
+    console.log("did parent shift")
+    _updateNodeView(nodeView)
   }
 }
 window.editorCreateNode = function() {
@@ -230,8 +252,10 @@ window.editorCreateNode = function() {
 
   var parent = null
   if (window.currentInspectorNode != null) {
+    // attach new node as child of currently selected node...
     parent = window.currentInspectorNode
   } else {
+    // ...or to the root node if none selected
     var editorState = Service.Get("state").currentState
     parent = editorState.view.rootView
   }
@@ -260,9 +284,7 @@ window.editorCreateNode = function() {
 
   parent.addChild(newNode)
 
-  window.setInspector(newNode)
-  window.updateJsonOutput()
-  window.updateTreeOutput()
+  _updateNodeView(newNode)
 }
 //TODO: instead of using multiple 'prompt()' calls, should create a dynamic form based on library selection
 function _createCircle() {
@@ -330,11 +352,7 @@ window.editorOpenFile = function(event) {
       window.jsonOutput.value = text
       console.log("reader finished - load data into editor")
       window.editorLoad()
-
-      
       document.getElementById("in_fopen").value = ""
-      //var output = document.getElementById('output');
-      //output.src = dataURL;
     };
     window.saveFileName = input.files[0].name
     reader.readAsText(input.files[0]);
