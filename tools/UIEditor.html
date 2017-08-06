@@ -6,6 +6,7 @@
     
     <!-- external code -->
     <script type="text/javascript" src="../js/framework/ext/uuid.js"></script>
+    <script type="text/javascript" src="../js/framework/ext/FileSaver.js"></script>
     <!-- framework code -->
     <script type="text/javascript" src="../js/framework/Service.js"></script>
     <script type="text/javascript" src="../js/framework/Animation.js"></script>
@@ -68,6 +69,9 @@
         <input type="button" value="Load" onClick="window.editorLoad()"></input>
         <input type="button" value="Reset" onClick="window.editorReset()"></input>
         <input type="button" value="Clipboard" onClick="window.editorCopyToClipboard()"></input>
+        <input type="button" value="Save" onClick="window.editorSaveToFile()"></input>
+        <br>Open:
+        <input id="in_fopen" type="file" value="Open" accept='.json' onchange="window.editorOpenFile(event)"></input>
     </form></td>
   </tr></table>
 </center>

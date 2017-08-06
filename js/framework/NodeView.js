@@ -347,6 +347,9 @@ class NodeView extends BaseListener {
 			var RP = Service.Get("rp");
 			sprite = RP.getSprite(sprite); //load sprite url into sprite resource
 		}
+		if (!sprite) {
+			return;
+		}
 		
 		if(this.sprite) {
 			console.error("NodeView: already has a sprite, abort!");

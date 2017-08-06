@@ -23,6 +23,7 @@ function game_create()
   window.nodeTree = document.getElementById("nodeTree")
   window.divInspector = document.getElementById("divInspector")
   window.nodeLibrary = document.getElementById("nodeLibrary")
+  window.currHighlight = null
 	
 	var stateController = Service.Get("state");
 	stateController.addState("loading", LoadingState);
@@ -63,7 +64,7 @@ function _rBuildTreeString(json, idxString) {
     var childIdx = 0
     for (var childJson of json.children) {
       var childIdxString = idxString + "," + childIdx
-      result += '<li onclick="window.treeNodeClicked(\''+childIdxString+'\')">'
+      result += '<li onclick="window.treeNodeClicked(\''+childIdxString+'\', event)">'
       result += _rBuildTreeString(childJson, childIdxString)
       result += "</li>"
       childIdx++
@@ -74,7 +75,7 @@ function _rBuildTreeString(json, idxString) {
   return result
 }
 //idxString format  "_,0,3,2" == root.children[0].children[3].children[2]
-window.treeNodeClicked = function(idxString) {
+window.treeNodeClicked = function(idxString, event) {
   var idxArr = idxString.split(",")
   idxArr.shift()
 
@@ -86,7 +87,14 @@ window.treeNodeClicked = function(idxString) {
     node = node.children[idxArr[0]]
     idxArr.shift()
   }
-   
+
+  if (window.currHighlight != null) {
+    window.currHighlight.classList.remove('highlight')
+  }
+  window.currHighlight = event.target
+  window.currHighlight.classList.add('highlight')
+
+
   console.log("select node " + JSON.stringify(node.toJson()) )
   window.setInspector(node)
 }
@@ -251,12 +259,12 @@ function _createRect() {
 }
 function _createButton() {
   var btnId = prompt("Button ID", "btnEventID")
-  var sprite = prompt("Button sprite", "gfx/btn_blue.png")
+  var sprite = prompt("Button sprite", "gfx/btn_blue.sprite")
   var label = prompt("Button label", "button label")
   var node = new ButtonView(btnId, sprite, label)
   return node
 }
-function _createImage() {
+function _createSprite() {
   var strPath = prompt("Sprite path", "gfx/mySprite.sprite")
   var node = new NodeView()
   node.setSprite(strPath, 0, false)
@@ -286,7 +294,31 @@ window.editorLoad = function() {
 
   window.clearInspector()
 }
+window.editorOpenFile = function(event) {
+    var input = event.target;
+    console.log("editor open file")
 
+    var reader = new FileReader();
+    reader.onload = function(){
+      var text = reader.result;
+      window.jsonOutput.value = text
+      console.log("reader finished - load data into editor")
+      window.editorLoad()
+
+      
+      document.getElementById("in_fopen").value = ""
+      //var output = document.getElementById('output');
+      //output.src = dataURL;
+    };
+    window.saveFileName = input.files[0].name
+    reader.readAsText(input.files[0]);
+}
+window.editorSaveToFile = function() {
+  var text = window.jsonOutput.value
+  var fileName = window.saveFileName || "ui.json"
+  var blob = new Blob([text], {type: "text/plain;charset=utf-8"});
+  saveAs(blob, fileName);
+}
 window.editorCopyToClipboard = function() {
   console.log("do copy to clipboard")
 
