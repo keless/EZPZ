@@ -178,7 +178,7 @@ class NodeView extends BaseListener {
 				break;
 			}
 			child.loadJson(data)
-			this.children.push(child)
+			this.addChild(child)
 		}
 	}
 
@@ -693,10 +693,16 @@ class NodeView extends BaseListener {
 	}
 	removeChildByIdx( childIdx, shouldDestroy ) {
 		shouldDestroy = shouldDestroy || false;
-		if(childIdx < 0) return;
+		if(childIdx < 0) {
+			return;
+		}
 		var child = this.children.splice(childIdx, 1)[0];
-		if(child.parent === this) child.parent = null;
-		if(shouldDestroy) child.Destroy();
+		if(child.parent === this) {
+			child.parent = null;
+		}
+		if(shouldDestroy) {
+			child.Destroy();
+		}
 	}
 	removeAllChildren( shouldDestroy ) { 
 		shouldDestroy = shouldDestroy || false;

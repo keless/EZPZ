@@ -57,14 +57,14 @@ window.updateTreeOutput = function() {
 function _rBuildTreeString(json, idxString) {
   var className = json.classType
 
-  var result = className
+  var result = '<div onclick="window.treeNodeClicked(\''+idxString+'\', event)">' + className + '</div>'
   
   if (json.children && json.children.length > 0) {
     result += "<ol>"
     var childIdx = 0
     for (var childJson of json.children) {
       var childIdxString = idxString + "," + childIdx
-      result += '<li onclick="window.treeNodeClicked(\''+childIdxString+'\', event)">'
+      result += '<li>'
       result += _rBuildTreeString(childJson, childIdxString)
       result += "</li>"
       childIdx++
@@ -88,23 +88,29 @@ window.treeNodeClicked = function(idxString, event) {
     idxArr.shift()
   }
 
+  console.log("select node " + JSON.stringify(node.toJson()) )
+  window.setInspector(node)
+}
+
+window.clearInspector = function() {
+  console.log("clear inspector")
+  if (window.currHighlight != null) {
+    window.currHighlight.classList.remove('highlight')
+    window.currHighlight = null
+  }
+
+  window.divInspector.innerHTML = ""
+  window.currentInspectorNode = null
+}
+
+window.setInspector = function(viewNode) {
+  console.log("set inspector")
   if (window.currHighlight != null) {
     window.currHighlight.classList.remove('highlight')
   }
   window.currHighlight = event.target
   window.currHighlight.classList.add('highlight')
 
-
-  console.log("select node " + JSON.stringify(node.toJson()) )
-  window.setInspector(node)
-}
-
-window.clearInspector = function() {
-  window.divInspector.innerHTML = ""
-  window.currentInspectorNode = null
-}
-
-window.setInspector = function(viewNode) {
   window.divInspector.innerHTML = _buildInspectorHTML(viewNode)
   window.currentInspectorNode = viewNode
 }
@@ -183,21 +189,41 @@ window.doParentShift = function(directionUp) {
     console.log("Cant shift without a parent")
     return;
   }
+  var needsRefresh = false
   if (directionUp) {
     // move this node to it's parent
-     
-     var parentParent = parent.getParent()
-     if (parentParent != null) {
-       nodeView.removeFromParent()
-       parentParent.addChild(nodeView)
-     }
+    var parentParent = parent.getParent()
+    if (parentParent != null) {
+      nodeView.removeFromParent()
+      parentParent.addChild(nodeView)
+      needsRefresh = true
+    }
   } else {
     //swap this node with its first child
     var firstChild = nodeView.getChildByIdx(0)
+    if (firstChild != null) {
+      parent.addChild(firstChild)
+
+      firstChild.addChild(nodeView)
+      needsRefresh = true
+    }else {
+      //try previous sibling, or the next sibling
+      var idx = parent.getChildIdx(nodeView)
+      if (idx > 0) {
+        parent.getChildByIdx(idx - 1).addChild(nodeView)
+        needsRefresh = true
+      }else if( idx + 1 < parent.getNumChildren() ) {
+        parent.getChildByIdx(idx + 1).addChild(nodeView)
+        needsRefresh = true
+      }
+    }
   }
 
-  window.updateTreeOutput()
-  window.updateJsonOutput()
+  if (needsRefresh) {
+    window.setInspector(nodeView)
+    window.updateTreeOutput()
+    window.updateJsonOutput()
+  }
 }
 window.editorCreateNode = function() {
   var option = window.nodeLibrary.options[window.nodeLibrary.selectedIndex].text
