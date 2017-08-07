@@ -22,7 +22,7 @@ class LoadingView extends BaseStateView {
 	constructor( resNameArr, nextStateName ) {
 		super();
 		this.resLoaded = 0;
-		this.resToLoad = resNameArr;
+		this.resToLoad = resNameArr.slice(); //copy
 		this.numToLoadTotal = resNameArr.length;
 		this.resLoaded = [];
 		this.loadingName = "";
@@ -53,44 +53,67 @@ class LoadingView extends BaseStateView {
 		this.resToLoad.splice(0,1); //remove from front
 		var self = this;
 		
-		var ext = this.loadingName.substr(this.loadingName.lastIndexOf('.') + 1);
-		
-		if (this.verbose) {
-			console.log("load in stride " + stride + " : " + currLoading);
-		}
+		if (this.loadingName.substr(0,4) == "fpql") {
+			//Handle fourpoleanimation quickload
+			var params = this.loadingName.split(":")
+			var fileName = params[1]
+			var baseName = params[2]
+			console.log("LoadingState - quick load fourpoleanim " + fileName + " " + baseName)
+			RP.loadFourPoleAnimationQuickAttach(fileName, baseName, function(e){
+				self.resLoaded.push(currLoading);
+				self._loadNext( 1 ); //recursion inside of anonymous function, yay!
+			})
+		}else if (this.loadingName.substr(0,2) == "ql") {
+			//Handle animation quickload
+			var params = this.loadingName.split(":")
+			var fileName = params[1]
+			var baseName = params[2]
+			console.log("LoadingState - quick load animation " + fileName + " " + baseName)
+			RP.loadAnimationQuickAttach(fileName, baseName, function(e){
+				self.resLoaded.push(currLoading);
+				self._loadNext( 1 ); //recursion inside of anonymous function, yay!
+			})
+		}else {
+			//Handle normal extension detection
+			var ext = this.loadingName.substr(this.loadingName.lastIndexOf('.') + 1);
+			
+			if (this.verbose) {
+				console.log("load in stride " + stride + " : " + currLoading);
+			}
 
-		switch(ext) {
-			case "png":
-			case "PNG":
-			case "bmp":
-			case "BMP":
-			case "jpg":
-			case "JPG":
-				RP.loadImage(currLoading, function(e){
-					self.resLoaded.push(currLoading);
-					self._loadNext( 1 ); //recursion inside of anonymous function, yay!
-				});
-			break;
-			case "sprite":
-				RP.loadSprite(currLoading, function(e){
-					self.resLoaded.push(currLoading);
-					self._loadNext( 1 ); //recursion inside of anonymous function, yay!
-				});
-			break;
-			case "spb":
-				RP.loadSpriteBatch(currLoading, function(e){
-					self.resLoaded.push(currLoading);
-					self._loadNext( 1 ); //recursion inside of anonymous function, yay!
-				});
-			break;
-			//case "anim":
-			//case "json":
-			default:
-				RP.loadJson(currLoading, function(e){
-					self.resLoaded.push(currLoading);
-					self._loadNext( 1 ); //recursion inside of anonymous function, yay!
-				});
-			break;
+			switch(ext) {
+				case "png":
+				case "PNG":
+				case "bmp":
+				case "BMP":
+				case "jpg":
+				case "JPG":
+					RP.loadImage(currLoading, function(e){
+						self.resLoaded.push(currLoading);
+						self._loadNext( 1 ); //recursion inside of anonymous function, yay!
+					});
+				break;
+				case "sprite":
+					RP.loadSprite(currLoading, function(e){
+						self.resLoaded.push(currLoading);
+						self._loadNext( 1 ); //recursion inside of anonymous function, yay!
+					});
+				break;
+				case "spb":
+					RP.loadSpriteBatch(currLoading, function(e){
+						self.resLoaded.push(currLoading);
+						self._loadNext( 1 ); //recursion inside of anonymous function, yay!
+					});
+				break;
+				//case "anim":
+				//case "json":
+				default:
+					RP.loadJson(currLoading, function(e){
+						self.resLoaded.push(currLoading);
+						self._loadNext( 1 ); //recursion inside of anonymous function, yay!
+					});
+				break;
+			}
 		}
 
 		if(stride > 0) {

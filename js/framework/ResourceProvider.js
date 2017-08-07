@@ -18,6 +18,10 @@ class ResourceProvider {
 		this.jsonFiles = {};
 		this.numJsonFilesLoading = 0;
 		
+		this.animations = {}
+		this.fourPoleAnimations = {}
+		this.numAnimationsQuickLoading = 0;
+
 		this.dynamicRes = {};
 		
 		this.baseURL = "";
@@ -32,6 +36,7 @@ class ResourceProvider {
 		if( this.numSpritesLoading > 0 ) return true;
 		if( this.numSpriteBatchesLoading > 0 ) return true;
 		if( this.numJsonFilesLoading > 0 ) return true;
+		if( this.numAnimationsQuickLoading > 0) return true;
 		return false;
 	}
 	
@@ -169,17 +174,108 @@ class ResourceProvider {
 		
 		if(fnOnLoad) RP.eventBus.addListener(fileName, fnOnLoad);
 		getJSON(this.baseURL + fileName, function(data) {
-		 if(RP.verbose) console.log("spriteBatch loaded: " + fileName);
-		 RP.spriteBatches[fileName].LoadFromJson(data, function(){
-			 RP.numSpriteBatchesLoading--;
-			 RP._didLoad(fileName, RP.spriteBatches[fileName]);
-		 });
+			if(RP.verbose) console.log("spriteBatch loaded: " + fileName);
+			RP.spriteBatches[fileName].LoadFromJson(data, function(){
+				RP.numSpriteBatchesLoading--;
+				RP._didLoad(fileName, RP.spriteBatches[fileName]);
+			});
 		});
 		
 		this.spriteBatches[fileName] = spriteBatch;
 		this.numSpriteBatchesLoading++;
 	}
-	
+	getAnimationQuickAttach(fileName, baseName, fnOnLoad) {
+		var resName = fileName + ":" + baseName
+		if(!this.animations[resName] || !this.animations[resName].isLoaded)
+		{
+			this.loadAnimationQuickAttach(fileName, baseName, fnOnLoad);
+			return;
+		}
+		
+		if(fnOnLoad) fnOnLoad({"evtName":resName, "status":"loadComplete", "res":this.animations[resName]});
+		
+		return this.animations[resName];
+	}
+	loadAnimationQuickAttach(fileName, baseName, fnOnLoad) {
+		var resName = fileName + ":" + baseName
+		var RP = this;
+		if(this.animations[resName]) {
+			if(this.animations[resName].isLoaded) {
+				//already loaded
+				if(fnOnLoad) fnOnLoad({"evtName":resName, "status":"loadComplete", "res":this.animations[resName]});
+			} else {
+				//pending load
+				if(fnOnLoad) RP.eventBus.addListener(resName, fnOnLoad);
+			}
+			return;
+		}
+
+		if(this.verbose) console.log("load animation quickAttach " + fileName);
+
+		var anim = new Animation()
+		anim.isLoaded = false
+		
+		if(fnOnLoad) RP.eventBus.addListener(resName, fnOnLoad);
+		this.getJson(this.baseURL + fileName, function(e) {
+			anim.LoadFromJson(e.res)
+			anim.QuickAttach(baseName, ".sprite", function(){
+				if(RP.verbose) console.log("animation quickAttach loaded: " + resName);
+				anim.isLoaded = true
+				RP.numAnimationsQuickLoading--
+				if (fnOnLoad) fnOnLoad({"evtName":fileName, "status":"loadComplete", "res":anim})
+			})
+		})
+
+		this.animations[resName] = anim
+		this.numAnimationsQuickLoading++
+	}
+
+	getFourPoleAnimationQuickAttach(fileName, baseName, fnOnLoad) {
+		var resName = fileName + ":" + baseName
+		if(!this.fourPoleAnimations[resName] || !this.fourPoleAnimations[resName].isLoaded)
+		{
+			this.loadAnimationQuickAttach(fileName, baseName, fnOnLoad);
+			return;
+		}
+		
+		if(fnOnLoad) fnOnLoad({"evtName":resName, "status":"loadComplete", "res":this.fourPoleAnimations[resName]});
+		
+		return this.fourPoleAnimations[resName];
+	}
+	loadFourPoleAnimationQuickAttach(fileName, baseName, fnOnLoad) {
+		var resName = fileName + ":" + baseName
+		var RP = this;
+		if(this.fourPoleAnimations[resName]) {
+			if(this.fourPoleAnimations[resName].isLoaded) {
+				//already loaded
+				if(fnOnLoad) fnOnLoad({"evtName":resName, "status":"loadComplete", "res":this.fourPoleAnimations[resName]});
+			} else {
+				//pending load
+				if(fnOnLoad) RP.eventBus.addListener(resName, fnOnLoad);
+			}
+			return;
+		}
+
+		if(this.verbose) console.log("load FourPole quickAttach " + fileName);
+
+		var anim = new FourPoleAnimation()
+		anim.isLoaded = false
+		
+		if(fnOnLoad) RP.eventBus.addListener(resName, fnOnLoad);
+		this.getJson(this.baseURL + fileName, function(e) {
+			anim.LoadFromJson(e.res)
+			anim.QuickAttach(baseName, ".sprite", function(){
+				if(RP.verbose) console.log("FourPole quickAttach loaded: " + resName);
+				anim.isLoaded = true
+				RP.numAnimationsQuickLoading--
+				if (fnOnLoad) fnOnLoad({"evtName":fileName, "status":"loadComplete", "res":anim})
+			})
+		})
+
+		this.fourPoleAnimations[resName] = anim
+		this.numAnimationsQuickLoading++
+	}
+
 	getJson(fileName, fnOnLoad) {
 		if(!this.jsonFiles[fileName] || !this.jsonFiles[fileName].isLoaded) 
 		{
