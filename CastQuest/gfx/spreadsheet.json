@@ -1,0 +1,200 @@
+{
+    "Constants": {
+        "x1": {
+            "data": 29.0039,
+            "jsonobjects": {
+                "json": "test"
+            }
+        },
+        "x2": {
+            "data": 42344,
+            "jsonobjects": {
+                "json": "value"
+            }
+        },
+        "x3": {
+            "data": "ageae",
+            "jsonobjects": {
+                "json": 55.05
+            }
+        },
+        "x4": {
+            "data": "afeige",
+            "jsonobjects": [
+                {
+                    "json": "blob"
+                },
+                {
+                    "json": "two"
+                }
+            ]
+        }
+    },
+    "EnemyList": [
+        {
+            "name": "Giant Rat",
+            "hp": 50,
+            "int": 1,
+            "str": 1,
+            "agi": 1,
+            "xpreward": 1,
+            "abilities": [
+                "Bite"
+            ],
+            "mingroupsize": 1,
+            "maxgroupsize": 3
+        }
+    ],
+    "DefaultPartyInventory": [
+        {
+            "name": "Wooden Sword",
+            "type": "weapon",
+            "abilities": [
+                {
+                    "name": "Attack",
+                    "castTime": 0.15,
+                    "cooldownTime": 1.85,
+                    "range": 1,
+                    "effectsOnCast": [
+                        {
+                            "effectType": "damage",
+                            "damageType": "piercing",
+                            "targetStat": "hp_curr",
+                            "valueBase": 2,
+                            "valueStat": "str",
+                            "valueMultiplier": 2,
+                            "react": "shake"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Yew Wand",
+            "type": "weapon",
+            "abilities": [
+                {
+                    "name": "Attack",
+                    "castTime": 0.15,
+                    "cooldownTime": 1.85,
+                    "range": 2,
+                    "effectsOnCast": [
+                        {
+                            "effectType": "damage",
+                            "damageType": "arcane",
+                            "targetStat": "hp_curr",
+                            "valueBase": 1,
+                            "valueStat": "int",
+                            "valueMultiplier": 2,
+                            "react": "shake"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Short Bow",
+            "type": "weapon",
+            "abilities": [
+                {
+                    "name": "Attack",
+                    "castTime": 0.15,
+                    "cooldownTime": 1.85,
+                    "range": 3,
+                    "effectsOnCast": [
+                        {
+                            "effectType": "damage",
+                            "damageType": "arcane",
+                            "targetStat": "hp_curr",
+                            "valueBase": 2,
+                            "valueStat": "agi",
+                            "valueMultiplier": 2,
+                            "react": "shake"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Wooden Shield",
+            "type": "equipment"
+        },
+        {
+            "name": "Novice Spellbook",
+            "type": "equipment"
+        },
+        {
+            "name": "Basic Quiver",
+            "type": "equipment"
+        },
+        {
+            "name": "Scale Mail",
+            "type": "armor"
+        },
+        {
+            "name": "Novice Robes",
+            "type": "armor"
+        },
+        {
+            "name": "Leather Tunic",
+            "type": "armor"
+        }
+    ],
+    "SpellParts_Effects": {
+        "minor glyph of damage": {
+            "effecttype": "damage",
+            "damagetype": "piercing",
+            "targetstat": "str",
+            "valuebase": 2,
+            "valuestat": "str",
+            "valuemultiplier": 2,
+            "react": "shake"
+        },
+        "minor glyph of healing": {
+            "effecttype": "heal",
+            "targetstat": "int",
+            "valuebase": 2,
+            "valuestat": "str",
+            "valuemultiplier": 2,
+            "react": "heal"
+        }
+    },
+    "SpellParts_Mods": {
+        "sigil of range": {
+            "type": "range",
+            "value": 1
+        },
+        "sigil of alacrity": {
+            "type": "cooldownTime",
+            "value": -1
+        },
+        "sigil of thought": {
+            "type": "castTime",
+            "value": -0.2
+        }
+    },
+    "EnemyAbilities": [
+        {
+            "name": "Bite",
+            "casttime": 0.1,
+            "cooldowntime": 1.75,
+            "range": 1,
+            "effectsoncast": [
+                {
+                    "effectType": "debuff",
+                    "targetStat": "str_curr",
+                    "effectLifetime": 3,
+                    "valueBase": 2,
+                    "react": "debuff"
+                },
+                {
+                    "effectType": "damage",
+                    "damageType": "piercing",
+                    "targetStat": "hp_curr",
+                    "valueBase": 2,
+                    "react": "shake"
+                }
+            ]
+        }
+    ]
+}

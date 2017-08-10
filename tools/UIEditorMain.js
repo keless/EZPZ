@@ -17,7 +17,7 @@ function game_create()
   window.app = app;
 
   var RP = Service.Get("rp")
-  RP.baseURL = "../"
+  RP.baseURL = "../CastQuest/"
   
   window.jsonOutput = document.getElementById("jsonOutput")
   window.nodeTree = document.getElementById("nodeTree")

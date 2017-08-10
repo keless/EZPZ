@@ -1,0 +1,8 @@
+{
+	"image":"centaur1.png",
+	"format":"gridSub",
+	"width":28,
+	"height":28,
+	"fps":10,
+	"frames":[0,1]
+}

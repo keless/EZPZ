@@ -10,8 +10,11 @@ class Config {
 
 var game_create = function()
 {
-	var app = new Application("Territories", "content");
+	var app = new Application("Cast Quest", "content");
 	window.app = app;
+
+	var RP = Service.Get("rp")
+  RP.baseURL = "CastQuest/"
 	
 	var stateController = Service.Get("state");
 	stateController.addState("loading", LoadingState);

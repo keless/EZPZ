@@ -1,0 +1,40 @@
+{
+  "spriteBatchVer":"1.0",
+  "default":{
+    "image":"gfx/avatars/2d_char_test.png",
+    "format":"gridSub",
+    "width":25,
+    "height":25,
+    "fps":10
+  },
+  "sprites":{
+    "hero_idleN":{
+      "frames":[4, 5],
+      "fps":2
+    },
+    "hero_idleE":{
+      "frames":[2, 3],
+      "fps":2
+    },
+    "hero_idleS":{
+      "frames":[0, 1],
+      "fps":2
+    },
+    "hero_idleW":{
+      "frames":[6, 7],
+      "fps":2
+    },
+    "hero_walkN":{
+      "frames":[4, 5]
+    },
+    "hero_walkE":{
+      "frames":[2, 3]
+    },
+    "hero_walkS":{
+      "frames":[0, 1]
+    },
+    "hero_walkW":{
+      "frames":[6, 7]
+    }
+  }
+}

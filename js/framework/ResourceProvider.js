@@ -25,7 +25,7 @@ class ResourceProvider {
 		this.dynamicRes = {};
 		
 		this.baseURL = "";
-		this.verbose = false;
+		this.verbose = true;
 		this.eventBus.verbose = false;
 		
 		Service.Add("rp", this);
@@ -216,13 +216,13 @@ class ResourceProvider {
 		anim.isLoaded = false
 		
 		if(fnOnLoad) RP.eventBus.addListener(resName, fnOnLoad);
-		this.getJson(this.baseURL + fileName, function(e) {
-			anim.LoadFromJson(e.res)
+		getJSON(this.baseURL + fileName, function(data) {
+			anim.LoadFromJson(data)
 			anim.QuickAttach(baseName, ".sprite", function(){
 				if(RP.verbose) console.log("animation quickAttach loaded: " + resName);
 				anim.isLoaded = true
 				RP.numAnimationsQuickLoading--
-				if (fnOnLoad) fnOnLoad({"evtName":fileName, "status":"loadComplete", "res":anim})
+				RP._didLoad(resName, RP.animations[resName]);
 			})
 		})
 
@@ -262,13 +262,13 @@ class ResourceProvider {
 		anim.isLoaded = false
 		
 		if(fnOnLoad) RP.eventBus.addListener(resName, fnOnLoad);
-		this.getJson(this.baseURL + fileName, function(e) {
-			anim.LoadFromJson(e.res)
+		getJSON(this.baseURL + fileName, function(data) {
+			anim.LoadFromJson(data)
 			anim.QuickAttach(baseName, ".sprite", function(){
 				if(RP.verbose) console.log("FourPole quickAttach loaded: " + resName);
 				anim.isLoaded = true
 				RP.numAnimationsQuickLoading--
-				if (fnOnLoad) fnOnLoad({"evtName":fileName, "status":"loadComplete", "res":anim})
+				RP._didLoad(resName, RP.fourPoleAnimations[resName]);
 			})
 		})
 
