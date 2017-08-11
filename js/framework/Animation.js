@@ -31,9 +31,8 @@ class Animation {
 	QuickAttach( baseName, extName, fnOnComplete ) {
 		var RP = Service.Get("rp");
 		var self = this;
-		var imgsDownloading = 0;
+		var imgsDownloading = Object.keys(this.graph).length
 		for( var state in this.graph ) {
-			imgsDownloading++;
 			//console.log("get sprite "+ state);
 			
 			(function(stateName){
@@ -54,7 +53,7 @@ class Animation {
 		}
 	}
 	AttachSprite( animState, sprite ) {
-		//console.log("attach sprite for " + animState)
+		console.log("attach sprite for " + animState)
 		this.sprites[animState] = sprite;
 	}
 	
@@ -154,49 +153,56 @@ class FourPoleAnimation extends Animation {
 		var RP = Service.Get("rp");
 		var self = this;
 		var imgsDownloading = 0;
+		var finishedProcessing = false
 		for( var state in this.graph ) {
-			imgsDownloading++;
 			(function(stateName){
 				//try to get the sprite without direction added
 				if (RP.hasSprite(baseName + stateName + extName)) {
 					console.log("get sprite " + baseName + stateName + extName);
+					imgsDownloading++
 					RP.getSprite( baseName + stateName + extName, function(e){
 						//console.log("got sprite for state " + stateName);
 						var sprite = e.res;
 						if(sprite) {
+							console.log("do attach sprite " + stateName)
 							self.AttachSprite(stateName, sprite);
 							imgsDownloading--;
 							
-							if(fnOnComplete && imgsDownloading == 0) {
+							if(fnOnComplete && imgsDownloading == 0 && finishedProcessing) {
+								console.log("finished loading sprites @ " + stateName + dir)
 								fnOnComplete();
 							}
 						}
 					});
-				}
-
-				//try to get the sprite with direction added
-				for( var dirIdx in self.directions ) {
-					(function(dIdx){
-						var dir = self.directions[dIdx];
-						
-						if (RP.hasSprite(baseName + stateName + dir + extName)) {
-							RP.getSprite( baseName + stateName + dir + extName, function(e){
-								var sprite = e.res;
-								if(sprite) {
-									self.AttachSprite(stateName + dir, sprite);
-									imgsDownloading--;
-									
-									if(fnOnComplete && imgsDownloading == 0) {
-										fnOnComplete();
+				} else {
+					//try to get the sprite with direction added
+					for( var dirIdx in self.directions ) {
+						(function(dIdx){
+							var dir = self.directions[dIdx];
+							
+							if (RP.hasSprite(baseName + stateName + dir + extName)) {
+								imgsDownloading++
+								RP.getSprite( baseName + stateName + dir + extName, function(e){
+									var sprite = e.res;
+									if(sprite) {
+										console.log("do attach sprite " + stateName + dir)
+										self.AttachSprite(stateName + dir, sprite);
+										imgsDownloading--;
+										
+										if(fnOnComplete && imgsDownloading == 0 && finishedProcessing) {
+											console.log("finished loading sprites @ " + stateName + dir)
+											fnOnComplete();
+										}
 									}
-								}
-							});
-						}
-					}(dirIdx));
+								});
+							}
+						}(dirIdx));
+					}
 				}
 			}(state));
 
 		}
+		finishedProcessing = true
 	}
 
 	CreateInstance() {
