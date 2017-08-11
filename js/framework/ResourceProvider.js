@@ -25,7 +25,7 @@ class ResourceProvider {
 		this.dynamicRes = {};
 		
 		this.baseURL = "";
-		this.verbose = true;
+		this.verbose = false;
 		this.eventBus.verbose = false;
 		
 		Service.Add("rp", this);

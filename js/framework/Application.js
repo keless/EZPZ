@@ -99,7 +99,7 @@ class Application {
 		clearInterval( this.UpdateLoopInterval.bind(this) ); 
 		this.UpdateLoopInterval = null;
 	}
-	
+
 	_updateLoop() {
 		//arguments.callee.minTickPeriod = 1;
 		var stateController = Service.Get("state");

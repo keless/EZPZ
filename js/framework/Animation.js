@@ -53,7 +53,7 @@ class Animation {
 		}
 	}
 	AttachSprite( animState, sprite ) {
-		console.log("attach sprite for " + animState)
+		//console.log("attach sprite for " + animState)
 		this.sprites[animState] = sprite;
 	}
 	
@@ -153,23 +153,19 @@ class FourPoleAnimation extends Animation {
 		var RP = Service.Get("rp");
 		var self = this;
 		var imgsDownloading = 0;
-		var finishedProcessing = false
 		for( var state in this.graph ) {
 			(function(stateName){
 				//try to get the sprite without direction added
 				if (RP.hasSprite(baseName + stateName + extName)) {
-					console.log("get sprite " + baseName + stateName + extName);
 					imgsDownloading++
 					RP.getSprite( baseName + stateName + extName, function(e){
 						//console.log("got sprite for state " + stateName);
 						var sprite = e.res;
 						if(sprite) {
-							console.log("do attach sprite " + stateName)
 							self.AttachSprite(stateName, sprite);
 							imgsDownloading--;
 							
-							if(fnOnComplete && imgsDownloading == 0 && finishedProcessing) {
-								console.log("finished loading sprites @ " + stateName + dir)
+							if(fnOnComplete && imgsDownloading == 0) {
 								fnOnComplete();
 							}
 						}
@@ -185,12 +181,10 @@ class FourPoleAnimation extends Animation {
 								RP.getSprite( baseName + stateName + dir + extName, function(e){
 									var sprite = e.res;
 									if(sprite) {
-										console.log("do attach sprite " + stateName + dir)
 										self.AttachSprite(stateName + dir, sprite);
 										imgsDownloading--;
 										
-										if(fnOnComplete && imgsDownloading == 0 && finishedProcessing) {
-											console.log("finished loading sprites @ " + stateName + dir)
+										if(fnOnComplete && imgsDownloading == 0) {
 											fnOnComplete();
 										}
 									}
@@ -200,9 +194,7 @@ class FourPoleAnimation extends Animation {
 					}
 				}
 			}(state));
-
 		}
-		finishedProcessing = true
 	}
 
 	CreateInstance() {
@@ -240,7 +232,7 @@ class FourPoleAnimationInstance extends AnimationInstance {
 		this.drawFrame = 0;
 
 		if (this.pAnimation.sprites[ this.currAnim + this.dir ]) {
-			console.log("start anim " + animState + this.dir )
+			//console.log("start anim " + animState + this.dir )
 			// check if sprite has direction
 			this.drawSprite = this.pAnimation.sprites[ this.currAnim + this.dir ];
 		}else {

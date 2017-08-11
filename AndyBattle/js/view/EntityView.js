@@ -5,9 +5,13 @@ class EntityView extends NodeView
 	constructor( entityModel ) {
 		super();
 		
-		super.setRect(40, 80, "#00AAAA");
-		
 		this.pEntityModel = entityModel;
+
+		var RP = Service.Get("rp")
+		this.setAnim( RP.getFourPoleAnimationQuickAttach("gfx/avatars/avatar.anim","hero_") )
+		this.pixelated = true
+		this.scale = 2.0
+		this.animInstance.setDirection(0, this.pEntityModel.facing)
 		
 		this.pEntityModel.addListener("update", this.updateFromModel.bind(this));
 	}

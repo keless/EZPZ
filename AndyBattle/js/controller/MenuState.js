@@ -11,7 +11,7 @@ class MenuStateView extends BaseStateView {
 	constructor() {
 		super();
 		var RP = Service.Get("rp");
-		var sprBtnBlue = RP.getSprite("gfx/btn_blue.sprite");
+		var sprBtnBlue = RP.getSprite("gfx/ui/btn_blue.sprite");
 		
 		var btnMain = new ButtonView("btnMain", sprBtnBlue, "Main");
 		btnMain.pos.setVal(150, 150);

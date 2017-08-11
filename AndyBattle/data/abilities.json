@@ -1,0 +1,19 @@
+var g_abilities = {
+	"Melee":{
+		"name": "Melee",
+		"castTime": 0,
+		"cooldownTime": 0,
+		"range": 1,
+		"effectsOnCast": [
+				{
+						"effectType": "damage",
+						"damageType": "piercing",
+						"targetStat": "hp_curr",
+						"valueBase": 2,
+						"valueStat": "str",
+						"valueMultiplier": 2,
+						"react": "shake"
+				}
+		]
+	}
+}

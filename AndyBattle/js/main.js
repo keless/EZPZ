@@ -22,12 +22,9 @@ var game_create = function()
 	stateController.addState("battle", BattleState);
 	
 	var resources = [
-			"gfx/btn_blue.sprite",
-			"gfx/btn_dark.sprite",
-			"gfx/btn_white.sprite",
-			"gfx/aelius_floor.jpg",
-			"gfx/explosion_1.sprite",
-			"gfx/workbench3.png",
+			"gfx/ui/btn_blue.sprite",
+			"gfx/ui/btn_dark.sprite",
+			"gfx/ui/btn_white.sprite",
 			"gfx/avatars/avatars.spb",
 			"fpql:gfx/avatars/avatar.anim:hero_"
 			];

@@ -1,10 +1,19 @@
 "use strict"; //ES6
 
 class Facing {
-	static get UP() { return 0; }
-	static get RIGHT() { return 1; }
-	static get DOWN() { return 2; }
-	static get LEFT() { return 3; }
+	static get UP() { return FourPoleAnimation.DIR_N; }
+	static get RIGHT() { return FourPoleAnimation.DIR_E; }
+	static get DOWN() { return FourPoleAnimation.DIR_S; }
+	static get LEFT() { return FourPoleAnimation.DIR_W; }
+
+	vecForFacing( facing ) {
+		switch(facing) {
+			case Facing.UP: 	return new Vec2D(0, 1)
+			case Facing.RIGHT: 	return new Vec2D(1, 0)
+			case Facing.DOWN: 	return new Vec2D(0, -1)
+			case Facing.LEFT: 	return new Vec2D(-1, 0)
+		}
+	}
 }
 
 /*
@@ -23,16 +32,29 @@ class EntityModel extends ICastEntity {
 
 		this.name = name;
 
-		this.hp_base = 50;
-		this.hp_curr = this.hp_base;
-
-		this.str = 10
-
 		this.pos = new Vec2D();
-		this.facing = Facing.RIGHT;
+		this.facing = (factionIdx == 0) ? Facing.RIGHT : Facing.LEFT
 
 		this.factionIdx = factionIdx
 		this.hasActed = false
+
+		// CastEngine
+		this.hp_base = 50;
+		this.hp_curr = this.hp_base;
+
+		this.int_base = this.int_curr = 10;
+		this.str_base = this.str_curr = 10;
+		this.agi_base = this.agi_curr = 10;
+
+		this.m_abilities = [];
+
+		this.m_abilityTargets = new CastTarget();
+
+		var abilityJson = g_abilities["Melee"];
+		var castCommandModel = new CastCommandModel( abilityJson );
+		var castCommandState = new CastCommandState(castCommandModel, this);
+		
+		this.meleeAbility = castCommandState;
 	}
 
 	canAct() {
@@ -46,7 +68,7 @@ class EntityModel extends ICastEntity {
 	}
 
 	getDamageDealt() {
-		return this.str
+		return this.str_curr
 	}
 
 	applyDamageDealt( dmg ) {
@@ -61,12 +83,28 @@ class EntityModel extends ICastEntity {
 		//console.log("entity update")	
 		this.eventBus.dispatch("update");
 	}
+
+	//array of abilities
+	getAbilities() {
+		return [ this.testAbility ];
+	}
 	
+	isCastingOrChanneling() {
+		for( var a of this.m_abilities ) {
+			if( a.isCasting() || a.isChanneling() ) return true;
+		}
+		return false;
+	}
+	
+	getTarget() {
+		return this.m_abilityTargets;
+	}
+	
+	//EventBus
 	addListener(event, listener) {
 		this.eventBus.addListener(event, listener);
 	}
 	removeListener(event, listener) {
 		this.eventBus.removeListener(event, listener);
 	}
-	
 }
