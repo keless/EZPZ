@@ -118,8 +118,9 @@ class BattleState extends AppState {
 			var dmgNumber = new NodeView()
 			dmgNumber.setLabel("" + -1 * dmgDone)
 			dmgNumber.pos.setVal(5 * direction, -10)
-			victimView.addChild(dmgNumber)
-			dmgNumber.tweenPos(0.9, new Vec2D(10*direction, -40), function(){
+			victimView.addChild(dmgNumber) //first add to victim to get its offset
+			self.view.overLayer.addChildKeepingWorldPos(dmgNumber) //then actually add it to the overLayer
+			dmgNumber.tweenPosDelta(0.9, new Vec2D(10*direction, -40), function(){
 				dmgNumber.removeFromParent()
 			})
 			// show damage numbers
@@ -140,6 +141,7 @@ class BattleState extends AppState {
 
 			//animate death and remove from view grid
 			var deadView = this.view.gridNodes[y][x].getChildByIdx(0)
+			this.view.deathLayer.addChildKeepingWorldPos(deadView)
 			deadView.tweenScale(0.5, 0.1, function() {
 				deadView.removeFromParent()
 			})

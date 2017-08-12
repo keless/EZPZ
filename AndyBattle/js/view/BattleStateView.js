@@ -5,10 +5,16 @@ class BattleStateView extends BaseStateView {
 		
 		this.pModel = model;
 
+		this.deathLayer = new NodeView()
+		this.rootView.addChild(this.deathLayer)
+
 		this.gridNodes = []
 		this.gridBase = new NodeView()
 		this.rootView.addChild(this.gridBase)
 		this._createGridNodes()
+
+		this.overLayer = new NodeView()
+		this.rootView.addChild(this.overLayer)
 	}
 
 	_createGridNodes() {

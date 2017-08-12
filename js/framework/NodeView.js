@@ -230,6 +230,21 @@ class NodeView extends BaseListener {
 		}
 		return this.rotation;
 	}
+	get worldPosition() {
+		return this.worldTransform.pos
+	}
+	// return { scale:f, rot:radian, pos:vec2d }
+	get worldTransform() {
+		var transform = { scale:this.scale, rot:this.rotation, pos:this.pos.clone() }
+		if (this.parent) {
+			// TODO: apply scale/rot to local pos before adding
+			var pTransform = this.parent.worldTransform
+			transform.scale += pTransform.scale
+			transform.rot += pTransform.rot
+			transform.pos.addVec( pTransform.pos )
+		}
+		return transform
+	}
 	
 	setUserData( data ) {
 		this.pUser = data;
@@ -679,6 +694,13 @@ class NodeView extends BaseListener {
 		this.children.push(child);
 		child.parent = this;
 	}
+	addChildKeepingWorldPos( child ) {
+		var cwp = child.worldPosition
+		var nwp = this.worldPosition
+		var delta = cwp.getVecSub(nwp)
+		child.pos.setVec(delta)
+		this.addChild(child)
+	}
 	removeFromParent(shouldDestroy) {
 		shouldDestroy = shouldDestroy || false;
 		if(!this.parent) return;
@@ -780,6 +802,10 @@ class NodeView extends BaseListener {
 	}
 	tweenPos( dt, endVal, fnOnComplete ) {
 		this.setVecTween("pos", dt, endVal, fnOnComplete);
+	}
+	tweenPosDelta( dt, deltaVal, fnOnComplete ) {
+		var endVal = this.pos.getVecAdd(deltaVal)
+		this.setVecTween("pos", dt, endVal, fnOnComplete)
 	}
 	setTween( paramName, dt, endVal, fnOnComplete ) {
 		var action = new NodeAction_float(paramName, dt, endVal);

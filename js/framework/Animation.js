@@ -153,6 +153,7 @@ class FourPoleAnimation extends Animation {
 		var RP = Service.Get("rp");
 		var self = this;
 		var imgsDownloading = 0;
+		var finishedProcessing = false
 		for( var state in this.graph ) {
 			(function(stateName){
 				//try to get the sprite without direction added
@@ -165,7 +166,7 @@ class FourPoleAnimation extends Animation {
 							self.AttachSprite(stateName, sprite);
 							imgsDownloading--;
 							
-							if(fnOnComplete && imgsDownloading == 0) {
+							if(fnOnComplete && imgsDownloading == 0 && finishedProcessing) {
 								fnOnComplete();
 							}
 						}
@@ -184,7 +185,7 @@ class FourPoleAnimation extends Animation {
 										self.AttachSprite(stateName + dir, sprite);
 										imgsDownloading--;
 										
-										if(fnOnComplete && imgsDownloading == 0) {
+										if(fnOnComplete && imgsDownloading == 0 && finishedProcessing) {
 											fnOnComplete();
 										}
 									}
@@ -195,6 +196,7 @@ class FourPoleAnimation extends Animation {
 				}
 			}(state));
 		}
+		finishedProcessing = true
 	}
 
 	CreateInstance() {
