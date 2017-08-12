@@ -73,6 +73,8 @@ class AnimationInstance {
 		this.drawSprite = null;
 		this.fps = 5;
 		this.startAnim(0, this.pAnimation.defaultAnim);
+
+		this.pause = false
 	}
 	
 	event ( ct, evt ) {
@@ -105,6 +107,8 @@ class AnimationInstance {
 	}
 	
 	Update( ct ) {
+		if (this.pause) return
+
 		//var state = this.graph[ this.currAnim ];
 		var sprite = this.drawSprite;
 		var numFrames =  sprite.getNumFrames();

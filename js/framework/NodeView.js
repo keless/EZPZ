@@ -509,7 +509,6 @@ class NodeView extends BaseListener {
 			self.textInput.renderNow(x, y);
 		});
 	}
-  	
 	getTextInputValue() {
 		if( this.textInput ) {
 		return this.textInput.value();
@@ -525,6 +524,30 @@ class NodeView extends BaseListener {
 		if( this.textInput ) {
 			this.textInput.value('');
 		}
+	}
+
+	setProgressVal(val) {
+		this.progress = val
+	}
+	setProgressBar(w, h, solidFill, progressFill) {
+		if (this.serializable) {
+			this.serializeData.push({"call":"setProgressBar", "w":w, "h":h, "solidFill":solidFill, "progressFill":progressFill})
+		}
+
+		this.progress = 0.5
+
+		this.size.setVal( Math.max(this.size.x, w), Math.max(this.size.y, h));
+		var self = this;
+		this.fnCustomDraw.push(function(gfx, x,y, ct){
+			if(self.alpha != 1.0) gfx.setAlpha(self.alpha);
+			gfx.drawRectEx(x, y, self.size.x, self.size.y, solidFill);
+			var w = self.size.x
+			var width = self.progress * (w-2);
+			//gfx.drawRectEx(x - (w/2) + (width/2) + 1, y, width, h-2, color);
+			gfx.drawRectEx(Math.floor(x - (w/2) + (width/2) + 1), y, Math.floor(self.size.x * self.progress), self.size.y, progressFill);
+			if(self.alpha != 1.0) gfx.setAlpha(1.0);
+		});
+
 	}
   
 	///fn(gfx, x,y, ct)
