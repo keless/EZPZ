@@ -10,10 +10,12 @@ var g_abilities = {
 						"damageType": "piercing",
 						"targetStat": "hp_curr",
 						"valueBase": 2,
-						"valueStat": "str",
+						"valueStat": "str_curr",
 						"valueMultiplier": 2,
 						"react": "shake"
 				}
-		]
+		],
+
+		"startCast":"meleeAttack"
 	}
 }

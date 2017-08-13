@@ -92,6 +92,8 @@ class BaseStateView extends BaseListener {
 	constructor() {
 		super();
 		this.rootView = new NodeView();
+		var gfx = Service.Get("gfx")
+		this.rootView.size.setVal(gfx.getWidth(), gfx.getHeight())
 	}
 	
 	Destroy() {

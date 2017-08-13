@@ -464,6 +464,10 @@ class Sprite {
 		}
 		else if( this.format == "grid" || this.format == "gridSub") {
 			
+			if (frameIdx < 0 || frameIdx > this.data.frames.length) {
+				console.error("frameIdx OOB")
+			}
+
 			if(this.format == "gridSub") {
 				//get sub-grid indexed frames
 				frameIdx = this.data.frames[frameIdx];

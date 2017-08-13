@@ -92,7 +92,7 @@ class Application {
 	_runUpdateLoop() {
 		if( this.UpdateLoopInterval != null ) return; //already running
 		this.lastUpdateTick = (new Date()).getTime();
-		this.UpdateLoopInterval = setInterval( this._updateLoop.bind(this), 30 );
+		this.UpdateLoopInterval = setInterval( this._updateLoop.bind(this), 33 );
 	}
 	_stopUpdateLoop() {
 		if( this.UpdateLoopInterval == null ) return; //already stopped

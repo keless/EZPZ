@@ -8,23 +8,13 @@ class EntityView extends NodeView
 		this.pEntityModel = entityModel;
 
 		var RP = Service.Get("rp")
-		this.setAnim( RP.getFourPoleAnimationQuickAttach("gfx/avatars/avatar.anim","hero_") )
+		this.setAnim( RP.getFourPoleAnimationQuickAttach("gfx/avatars/avatar.anim", entityModel.avatar + "_") )
 		this.pixelated = true
 		this.scale = 2.0
 		this.animInstance.setDirection(0, this.pEntityModel.facing)
 		
-		this.pEntityModel.addListener("update", this.updateFromModel.bind(this));
-	}
-	
-	Destroy() {
-		this.pEntityModel.removeListener("update", this.updateFromModel.bind(this));
-		this.pEntityModel = null;
-		super.Destroy();
 	}
 
-	updateFromModel(e) {
-		
-	}
 }
 
 /*

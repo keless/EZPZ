@@ -28,6 +28,7 @@ class CastCommandState {
 		this.m_state = CastCommandState.IDLE; //CCSstate
 		this.m_timeStart = 0; 							//double
 		this.m_channelTicks = 0; 						//int
+		this.m_costValue = 0
 		this.m_pModel = commandModel; 			//CastCommandModel
 		this.m_iOwner = entityOwner; 				//ICastEntity
 		

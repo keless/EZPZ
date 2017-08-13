@@ -1,8 +1,9 @@
 {
   "events":["end", "idle", "walk", "attack"],
   "graph":{
-			"idle":{ "fps":2, "transitions":{"end":"idle", "walk":"walk"} },
-      "walk":{ "fps":2, "transitions":{"end":"walk", "idle":"idle"} }
+			"idle":{ "fps":2, "transitions":{"end":"idle", "walk":"walk", "cast":"cast"} },
+      "walk":{ "fps":2, "transitions":{"end":"walk", "idle":"idle", "cast":"cast"} },
+      "cast":{ "fps":2, "transitions":{"end":"cast", "idle":"idle", "walk":"walk"} }
 		},
   "defaultState":"idle" 
 }

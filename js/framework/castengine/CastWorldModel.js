@@ -93,11 +93,11 @@ class CastWorldModel {
 				
 				path.to = target;
 				path.effects.push(effect);
-				//effect.retain(); //TODO
 			}
 			
 			this.m_effectsInTransit.push(path);
 		} else {
+			console.warn("non-entity target type not yet implemented")
 			//TODO: world position
 			//TODO: physics
 		}
@@ -122,12 +122,12 @@ class CastWorldModel {
 				
 				path.to = target;
 				path.effects.push(effect);
-				//effect.retain(); //TODO
 			}
 			
 			this.applyEffectToTarget( path );
-			//effect.release(); //we dont hold onto the path, so dont hold onto the effect
+			effect = null
 		} else {
+			console.warn("non-entity target type not yet implemented")
 			//TODO: world position
 		}
 	}

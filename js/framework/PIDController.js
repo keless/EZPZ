@@ -5,7 +5,7 @@
  * Use:
 
 var stepTime = 1/30; //30 fps (target dt==0.0333)
-var xVelPID = new PID( 1, 1, 1, stepTime );  
+var xVelPID = new PIDController( 1, 1, 1, stepTime );  
 
 var targetXVel = 22;
 

@@ -5,24 +5,20 @@
     "format":"gridSub",
     "width":25,
     "height":25,
-    "fps":10
+    "fps":2
   },
   "sprites":{
     "hero_idleN":{
-      "frames":[4, 5],
-      "fps":2
+      "frames":[4, 5]
     },
     "hero_idleE":{
-      "frames":[2, 3],
-      "fps":2
+      "frames":[2, 3]
     },
     "hero_idleS":{
-      "frames":[0, 1],
-      "fps":2
+      "frames":[0, 1]
     },
     "hero_idleW":{
-      "frames":[6, 7],
-      "fps":2
+      "frames":[6, 7]
     },
     "hero_walkN":{
       "frames":[4, 5]
@@ -35,6 +31,65 @@
     },
     "hero_walkW":{
       "frames":[6, 7]
+    },
+    "hero_cast":{
+      "frames":[8, 9]
+    },
+
+    "mage_idleN":{
+      "frames":[36, 37]
+    },
+    "mage_idleE":{
+      "frames":[34, 35]
+    },
+    "mage_idleS":{
+      "frames":[32, 33]
+    },
+    "mage_idleW":{
+      "frames":[38, 39]
+    },
+    "mage_walkN":{
+      "frames":[36, 37]
+    },
+    "mage_walkE":{
+      "frames":[34, 35]
+    },
+    "mage_walkS":{
+      "frames":[32, 33]
+    },
+    "mage_walkW":{
+      "frames":[38, 39]
+    },
+    "mage_cast":{
+      "frames":[40, 41]
+    },
+
+    "centaur_idleN":{
+      "frames":[52, 53]
+    },
+    "centaur_idleE":{
+      "frames":[50, 51]
+    },
+    "centaur_idleS":{
+      "frames":[48, 49]
+    },
+    "centaur_idleW":{
+      "frames":[54, 55]
+    },
+    "centaur_walkN":{
+      "frames":[52, 53]
+    },
+    "centaur_walkE":{
+      "frames":[50, 51]
+    },
+    "centaur_walkS":{
+      "frames":[48, 49]
+    },
+    "centaur_walkW":{
+      "frames":[54, 55]
+    },
+    "centaur_cast":{
+      "frames":[56, 57]
     }
   }
 }

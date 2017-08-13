@@ -19,13 +19,8 @@ class PortraitView extends NodeView
 		this.healthBar.pos.setVal(0, h/2 - this.healthBar.size.y)
 		this.addChild(this.healthBar)
 
-		this.pEntityModel.addListener("update", this.updateFromModel.bind(this));
-	}
-	
-	Destroy() {
-		this.pEntityModel.removeListener("update", this.updateFromModel.bind(this));
-		this.pEntityModel = null;
-		super.Destroy();
+		//this.pEntityModel.addListener("update", this.updateFromModel.bind(this));
+		this.SetListener("update", this.updateFromModel, this.pEntityModel.eventBus)
 	}
 
 	updateFromModel() {

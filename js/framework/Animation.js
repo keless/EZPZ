@@ -164,7 +164,7 @@ class FourPoleAnimation extends Animation {
 				if (RP.hasSprite(baseName + stateName + extName)) {
 					imgsDownloading++
 					RP.getSprite( baseName + stateName + extName, function(e){
-						//console.log("got sprite for state " + stateName);
+						console.log("got sprite for state " + stateName);
 						var sprite = e.res;
 						if(sprite) {
 							self.AttachSprite(stateName, sprite);
@@ -175,29 +175,30 @@ class FourPoleAnimation extends Animation {
 							}
 						}
 					});
-				} else {
-					//try to get the sprite with direction added
-					for( var dirIdx in self.directions ) {
-						(function(dIdx){
-							var dir = self.directions[dIdx];
-							
-							if (RP.hasSprite(baseName + stateName + dir + extName)) {
-								imgsDownloading++
-								RP.getSprite( baseName + stateName + dir + extName, function(e){
-									var sprite = e.res;
-									if(sprite) {
-										self.AttachSprite(stateName + dir, sprite);
-										imgsDownloading--;
-										
-										if(fnOnComplete && imgsDownloading == 0 && finishedProcessing) {
-											fnOnComplete();
-										}
-									}
-								});
-							}
-						}(dirIdx));
-					}
 				}
+
+				//try to get the sprite with direction added
+				for( var dirIdx in self.directions ) {
+					(function(dIdx){
+						var dir = self.directions[dIdx];
+						
+						if (RP.hasSprite(baseName + stateName + dir + extName)) {
+							imgsDownloading++
+							RP.getSprite( baseName + stateName + dir + extName, function(e){
+								var sprite = e.res;
+								if(sprite) {
+									self.AttachSprite(stateName + dir, sprite);
+									imgsDownloading--;
+									
+									if(fnOnComplete && imgsDownloading == 0 && finishedProcessing) {
+										fnOnComplete();
+									}
+								}
+							});
+						}
+					}(dirIdx));
+				}
+				
 			}(state));
 		}
 		finishedProcessing = true
@@ -244,6 +245,7 @@ class FourPoleAnimationInstance extends AnimationInstance {
 		}else {
 			// fall back to a sprite without direction
 			this.drawSprite = this.pAnimation.sprites[ this.currAnim ];
+			console.log("fall back to non-directional for " + this.currAnim + " sprite " + this.drawSprite.path)
 		}
 
 		var state = this.pAnimation.graph[ this.currAnim ];

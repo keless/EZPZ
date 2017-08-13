@@ -9,10 +9,11 @@ class GridNodeModel {
 
 // conforms to ICastPhysics 
 class BattleStateModel extends BaseStateModel {
-	static get TS_IDLE() { return 0; }
-	static get TS_MOV_ANIM() { return 1; }
-	static get TS_ATK_ANIM() { return 2; }
-	static get TS_GAME_OVER() { return 3; }
+	static get TS_IDLE() { return "TS_IDLE"; }
+	static get TS_MOV_ANIM() { return "TS_MOV_ANIM"; }
+	static get TS_ATK_ANIM() { return "TS_ATK_ANIM"; }
+	static get TS_CAST_ANIM() { return "TS_CAST_ANIM"; }
+	static get TS_GAME_OVER() { return "TS_GAME_OVER"; }
 
 	constructor( state, factionsJson ) {
 		super();
@@ -43,12 +44,15 @@ class BattleStateModel extends BaseStateModel {
 		this.castWorldModel.setPhysicsInterface( this );
 
 		this.initFactions(factionsJson)
+
+		this.SetListener("entityDeath", this.onEntityDeath, EventBus.game)
 	}
 
 	initFactions(factionsJson) {
     for(var f=0; f <factionsJson.length; f++) {
       for( var i=0; i < factionsJson[f].formations.length; i++) {
-				if (factionsJson[f].formations[i] == null) continue
+				var entityJson = factionsJson[f].formations[i]
+				if (entityJson == null) continue
 
         var x = i % this.formationWidth;
         var y = Math.floor(i / this.formationWidth)
@@ -58,20 +62,26 @@ class BattleStateModel extends BaseStateModel {
           x = (this.gridW - 1) - x
         }
 
-        this.addEntity(f, factionsJson[f].formations[i].name, x, y)
+        this.addEntity(f, entityJson.name, entityJson.avatar, x, y)
       }
     }
 	}
 
-	addEntity(factionIdx, name, x, y ) {
-		var ent = new EntityModel( name, factionIdx );
+	addEntity(factionIdx, name, avatar, x, y ) {
+		var ent = new EntityModel( name, avatar, factionIdx );
 		ent.pos.setVal(x, y)
 		this.factions[factionIdx].push(ent)
 		this.entities.push(ent);
 		this.gridNodes[y][x].entity = ent
 	}
 
+	onEntityDeath(e) {
+		var entity = e.entity
+		this.pendingDeaths.push(entity)
+	}
+
 	doCastEngineStep() {
+		//console.log("doCastEngineStep()")
 		this.castWorldModel.updateStep(1);
 	}
 
@@ -158,31 +168,54 @@ class BattleStateModel extends BaseStateModel {
 
 		if (this.turnState == BattleStateModel.TS_IDLE) {
 			// Select unit and perform action
-			var unit = this.chooseEntityToActForFaction(this.whosTurn)
-			if (unit == null) {
+			var entityModel = this.chooseEntityToActForFaction(this.whosTurn)
+			if (entityModel == null) {
 				// no units can act for this faction 
 				this.pState.action_endTurn(null)
-			}else {	
-				var x = unit.pos.x
-				var y = unit.pos.y
-				var adjacentEnemies = this.getEnemiesAdjacentTo(x, y)
-				var forwardDirection = this.getFactionDirection(this.whosTurn)
+			}else if( entityModel.isCastingOrChanneling() ) {
+				//continue casting
+				this.pState.action_endTurn(entityModel)
+			}else {
+				var castPhysics = this
+				var factionIdx = entityModel.factionIdx
+				var ignoreFriendlies = this.factions[factionIdx]
 
-				//xxx TODO: this.pState.action_castSkill(unit)
+				var didCast = false
+				for(var a of entityModel.getAbilities()) {
+					//todo: AI - prioritize spell to use
+					if( a.isIdle() && a.canAfford() ) {
+						//attempt to find target for ability
+						
+						var abilityRange = a.getRange();
+					
+						var targetEntities = castPhysics.GetEntitiesInRadius( entityModel.pos, abilityRange, ignoreFriendlies );
+						if( targetEntities.length == 0 ) continue;
+						
+						//todo: AI - prioritise target
+						var targetEntity = targetEntities[0];
+						
+						this.pState.action_castAbility(entityModel, a, targetEntity)
 
-				if (adjacentEnemies.length > 0) {
-					// do melee attack to an enemy
-					var target = adjacentEnemies[0].pos
-					//attack 
-					this.pState.action_attackUnit(x, y, target.x, target.y)
-				} else if (this.isValidPos(x + forwardDirection, y) && this.isSpaceEmpty(x + forwardDirection, y)) {
-					//try to move forward
-					this.pState.action_moveUnit(x, y, x + forwardDirection, y)
-				} else {
-					//skip turn
-					this.pState.action_endTurn(unit)
+						didCast = true
+						break;
+					}
 				}
+
+				if (!didCast) {
+					var x = entityModel.pos.x
+					var y = entityModel.pos.y
+					var forwardDirection = this.getFactionDirection(this.whosTurn)
+					if (this.isValidPos(x + forwardDirection, y) && this.isSpaceEmpty(x + forwardDirection, y)) {
+						//try to move forward
+						this.pState.action_moveUnit(x, y, x + forwardDirection, y)
+					} else {
+						//skip turn
+						this.pState.action_endTurn(entityModel)
+					}
+				}
+
 			}
+
 		}
 	}
 
@@ -256,7 +289,7 @@ class BattleStateModel extends BaseStateModel {
 			if( arrayContains(ignoreList, e) || e.isDead() ) continue;
 			
 			var dSq = e.pos.getDistSqFromVec(p);
-			if( dSq < rSq ) {
+			if( dSq <= rSq ) {
 				inRadius.push(e);
 			}
 		}

@@ -1,11 +1,11 @@
 "use strict"; //ES6
 
 class CastEffectType {
-	static get DAMAGE_STAT() { return 0; } 	//decrements stats that can be decremented (health, mana, etc)
-	static get SUPPRESS_STAT() { return 1; } //temporarily decrements stats while in effect (str, agi, etc)
-	static get HEAL_STAT() { return 2; }  	//increments stats that can be incremented
-	static get BUFF_STAT() { return 3; } 		//temporarily increases stats while in effect
-	static get SEND_EVENT() { return 4; } 	//causes an event to be sent to the game bus
+	static get DAMAGE_STAT() { return "DAMAGE_STAT"; } 	//decrements stats that can be decremented (health, mana, etc)
+	static get SUPPRESS_STAT() { return "SUPPRESS_STAT"; } //temporarily decrements stats while in effect (str, agi, etc)
+	static get HEAL_STAT() { return "HEAL_STAT"; }  	//increments stats that can be incremented
+	static get BUFF_STAT() { return "BUFF_STAT"; } 		//temporarily increases stats while in effect
+	static get SEND_EVENT() { return "SEND_EVENT"; } 	//causes an event to be sent to the game bus
 }
 
 /*
@@ -95,13 +95,23 @@ class CastEffect {
 	
 		this.m_pOrigin = fromEntity;
 	
-		this.m_isAoeEffect = json["aoeRadius"];
+		this.m_isAoeEffect = json["aoeRadius"] || false;
 		this.m_damageType = json["damageType"] || ""; //ex: fire
 		this.m_targetStat = json["targetStat"] || ""; //ex: hp_curr
 	
 		this.m_value = json["valueBase"] || 0.0; //ex: 10 damage
-		//todo: handle caster stat modifiers
-	
+
+		//handle caster stat modifiers
+		if (json["valueStat"]) {
+			var valueStat = this.m_pOrigin.getProperty(json["valueStat"])
+			if (valueStat == undefined) {
+				console.error("entity does not define value stat " + json["valueStat"])
+			}else {
+				var valueStatMult = json["valueMultiplier"]
+				this.m_value += valueStat * valueStatMult
+			}
+		}
+
 		this.m_lifeTime = json["effectLifetime"] || 0.0; //ex: 1.0 seconds
 	
 		this.m_tickFreq = json["tickFreq"] || this.m_tickFreq;

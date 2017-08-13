@@ -5,58 +5,52 @@ class BattleState extends AppState {
 		super();
 
     var factonsJson = [{formations:[
-      { name:"sam"}, null, { name:"bob"}, null, null, null, null, null, null
+      { name:"sam", avatar:"mage"}, null, { name:"bob", avatar:"hero"}, null, null, null, null, null, null
     ]}, {formations:[
-      null, null, { name:"bob"}, null, { name:"ders"}, null, null, null, null
+      null, null, { name:"bob", avatar:"centaur"}, null, { name:"ders", avatar:"mage"}, null, null, null, null
     ]}]
 
 		this.model = new BattleStateModel(this, factonsJson);
 		this.view = new BattleStateView(this.model);
-		
-		this.playerController = null;
 	}
 	
-	action_castSkill(entityModel) {
-
+	action_castAbility(entityModel, ability, targetEntityModel) {
+		this.model.turnState = BattleStateModel.TS_CAST_ANIM
 		if( entityModel.isCastingOrChanneling() ) {
-			//xxx WIP - todo: continue casting
+			console.warn("called action_castAbility on entity that is already casting or channeling")
 			this.action_endTurn(entityModel)
 			return
 		}
 		
-		var castPhysics = this.model
-		
-		var abilities = entityModel.getAbilities();
-		var factionIdx = entityModel.factionIdx
-		var ignoreFriendlies = this.model.factions[factionIdx]
+		//set the target group
+		var targetGroup = entityModel.getTarget();
+		targetGroup.clearTargetEntities();
+		targetGroup.addTargetEntity(targetEntityModel);
 
-		var didCast = false
-		for(var a of abilities) {
-			//todo: prioritize spell to use
-			if( a.isIdle() && a.canAfford() ) {
-				//attempt to find target for ability
-				
-				var abilityRange = a.getRange();
-			
-				var targetEntities = castPhysics.GetEntitiesInRadius( this.pEntityModel.pos, abilityRange, ignoreFriendlies );
-				if( targetEntities.length == 0 ) continue;
-				
-				//todo: prioritise target
-				var targetEntity = targetEntities[0];
-				
-				var targetGroup = this.pEntityModel.getTarget();
-				targetGroup.clearTargetEntities();
-				targetGroup.addTargetEntity(targetEntity);
-				
-				didCast = true
-				a.startCast();
+		var self = this
+		var fnOnAnimationComplete = function() {
+			self.action_endTurn(entityModel)
+		}
+
+		//todo: start animation for casting this ability
+		var startCast = ability.getDescriptor("startCast")
+		if (startCast != null) {
+			switch (startCast) {
+				case "meleeAttack":
+					this.view.animateMeleeAttack(entityModel, targetEntityModel, function() {
+						ability.startCast();
+					}, fnOnAnimationComplete)
+				break;
+				default:
+					console.warn("castAbility has no animation implementation for " + startCast)
+					//start the cast
+					ability.startCast();
 				break;
 			}
+		}else {
+			ability.startCast();
 		}
 	
-		if (!didCast) {
-			//xxx WIP - consider moving instead
-		}
 	}
 
 	// Prerequisites:
@@ -82,7 +76,7 @@ class BattleState extends AppState {
 
 		var self = this
 		unitView.tweenPos(1.0, new Vec2D(0,0), function() {
-			self.action_resolveDeaths(unitModel)
+			self.action_endTurn(unitModel)
 		})
 	}
 
@@ -125,11 +119,31 @@ class BattleState extends AppState {
 			})
 			// show damage numbers
 			unitView.tweenPos(0.6, new Vec2D(0,0), function() {
-				self.action_resolveDeaths(attackModel)
+				self.action_endTurn(attackModel)
 			})
 		})
 	}
 
+	action_endTurn(currentUnit) {
+		//console.log("turn over")
+		if (currentUnit) {
+			currentUnit.setHasActed(true)
+		}
+
+		this.model.doCastEngineStep()
+		
+		this.action_resolveDeaths()
+
+		this.model.changeWhosTurn()
+		this.model.turnState = BattleStateModel.TS_IDLE
+
+		if (this.model.isBattleOver()) {
+			this.action_endGame()
+		} else if (this.model.haveAllEntitiesActed()) {
+			this.action_endRound()
+		}
+	}
+	
 	action_resolveDeaths(activeEntityModel) {
 		// check for dead units
 		for (var i=0; i<this.model.pendingDeaths.length; i++) {
@@ -147,35 +161,6 @@ class BattleState extends AppState {
 			})
 		}
 		this.model.pendingDeaths.length = 0 //clear array
-
-		this.action_endTurn(activeEntityModel)
-	}
-
-	action_handleDeath(deadEnitityModel) {
-		if (!deadUnit.isDead) {
-			console.error("action_handleDeath called for non-dead unit")
-			return
-		}
-
-		var x = deadUnit.pos.x
-		var y = deadUnit.pos.y
-		this.model.gridNodes[y][x].entity = null
-	}
-
-	action_endTurn(currentUnit) {
-		//console.log("turn over")
-		if (currentUnit) {
-			currentUnit.setHasActed(true)
-		}
-		
-		this.model.changeWhosTurn()
-		this.model.turnState = BattleStateModel.TS_IDLE
-
-		if (this.model.isBattleOver()) {
-			this.action_endGame()
-		} else if (this.model.haveAllEntitiesActed()) {
-			this.action_endRound()
-		}
 	}
 
 	action_endRound() {
