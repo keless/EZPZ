@@ -24,14 +24,14 @@ class Facing {
 class EntityModel extends ICastEntity {
 	
 	// in: string name
-	constructor(name, avatar, factionIdx) {
+	constructor(json, factionIdx) {
 		super();
 
 		this.eventBus = new EventBus("entityModel");
 		this.eventBus.verbose = false;
 
-		this.name = name;
-		this.avatar = avatar
+		this.name = json.name || "noname"
+		this.avatar = json.avatar || "hero"
 
 		this.pos = new Vec2D();
 		this.facing = (factionIdx == 0) ? Facing.RIGHT : Facing.LEFT
@@ -40,12 +40,12 @@ class EntityModel extends ICastEntity {
 		this.hasActed = false
 
 		// CastEngine
-		this.hp_base = 50;
+		this.hp_base = json.hp || 50
 		this.hp_curr = this.hp_base;
 
-		this.int_base = this.int_curr = 10;
-		this.str_base = this.str_curr = 10;
-		this.agi_base = this.agi_curr = 10;
+		this.int_base = this.int_curr = json.int || 10
+		this.str_base = this.str_curr = json.str || 10
+		this.agi_base = this.agi_curr = json.agi || 10
 
 		this.m_abilities = [];
 

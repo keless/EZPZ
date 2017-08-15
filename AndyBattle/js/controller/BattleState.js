@@ -5,9 +5,9 @@ class BattleState extends AppState {
 		super();
 
     var factonsJson = [{formations:[
-      { name:"sam", avatar:"mage"}, null, { name:"bob", avatar:"hero"}, null, null, null, null, null, null
+      {name:"sam", hp:40, str:5, agi:15, int:20, avatar:"mage"}, null, { name:"bob", hp:50, str:10, agi:15, int:5, avatar:"hero"}, null, null, null, null, null, null
     ]}, {formations:[
-      null, null, { name:"bob", avatar:"centaur"}, null, { name:"ders", avatar:"mage"}, null, null, null, null
+      null, null, {name:"bob", hp:75, str:15, agi:10, int:5, avatar:"centaur"}, null, { name:"ders", hp:40, str:5, agi:10, int:20, avatar:"mage"}, null, null, null, null
     ]}]
 
 		this.model = new BattleStateModel(this, factonsJson);
@@ -134,7 +134,6 @@ class BattleState extends AppState {
 		
 		this.action_resolveDeaths()
 
-		this.model.changeWhosTurn()
 		this.model.turnState = BattleStateModel.TS_IDLE
 
 		if (this.model.isBattleOver()) {

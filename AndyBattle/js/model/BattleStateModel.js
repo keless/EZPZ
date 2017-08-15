@@ -20,7 +20,6 @@ class BattleStateModel extends BaseStateModel {
 		
 		this.pState = state;
 		
-		this.whosTurn = 0
 		this.turnState = BattleStateModel.TS_IDLE
 
 		this.factions = [[], []] //2d array [factionIdx][unitIdx]
@@ -62,13 +61,13 @@ class BattleStateModel extends BaseStateModel {
           x = (this.gridW - 1) - x
         }
 
-        this.addEntity(f, entityJson.name, entityJson.avatar, x, y)
+        this.addEntity(f, entityJson, x, y)
       }
     }
 	}
 
-	addEntity(factionIdx, name, avatar, x, y ) {
-		var ent = new EntityModel( name, avatar, factionIdx );
+	addEntity(factionIdx, json, x, y ) {
+		var ent = new EntityModel( json, factionIdx );
 		ent.pos.setVal(x, y)
 		this.factions[factionIdx].push(ent)
 		this.entities.push(ent);
@@ -123,24 +122,22 @@ class BattleStateModel extends BaseStateModel {
 		}
 	}
 
-	chooseEntityToActForFaction(factionIdx) {
-		//todo: select by speed/initiative?
+	chooseEntityToAct() {
+		//select entities that can act
 		var actable = []
-		for(var i=0; i < this.factions[factionIdx].length; i++) {
-			var entity = this.factions[factionIdx][i]
+		for(var i=0; i < this.entities.length; i++) {
+			var entity = this.entities[i]
 			if (entity.canAct()) {
 				actable.push(entity)
 			}
 		}
-		return actable[0]
-	}
 
-	changeWhosTurn() {
-		if (this.whosTurn == 0) {
-			this.whosTurn = 1
-		}else {
-			this.whosTurn = 0
-		}
+		//sort by 'initiative' (which currently is just agility)
+		actable.sort(function(a, b){
+			return b.agi_curr - a.agi_curr
+		})
+
+		return actable[0]
 	}
 
 	isFactionDead(factionIdx) {
@@ -168,7 +165,7 @@ class BattleStateModel extends BaseStateModel {
 
 		if (this.turnState == BattleStateModel.TS_IDLE) {
 			// Select unit and perform action
-			var entityModel = this.chooseEntityToActForFaction(this.whosTurn)
+			var entityModel = this.chooseEntityToAct()
 			if (entityModel == null) {
 				// no units can act for this faction 
 				this.pState.action_endTurn(null)
@@ -204,7 +201,7 @@ class BattleStateModel extends BaseStateModel {
 				if (!didCast) {
 					var x = entityModel.pos.x
 					var y = entityModel.pos.y
-					var forwardDirection = this.getFactionDirection(this.whosTurn)
+					var forwardDirection = this.getFactionDirection(entityModel.factionIdx)
 					if (this.isValidPos(x + forwardDirection, y) && this.isSpaceEmpty(x + forwardDirection, y)) {
 						//try to move forward
 						this.pState.action_moveUnit(x, y, x + forwardDirection, y)
