@@ -12,7 +12,7 @@ class NodeView extends BaseListener {
 		this.size = new Vec2D();
 		this.rotation = 0;
 		this.scale = 1;
-    this._visible = true;
+    	this._visible = true;
 
 		this.pUser = null;
 
@@ -377,9 +377,22 @@ class NodeView extends BaseListener {
 		var self = this;
 		this.fnCustomDraw.push(function(gfx, x,y, ct){
 			if(self.alpha != 1.0) gfx.setAlpha(self.alpha);
-			self.sprite.drawFrame(gfx, x, y, self.spriteFrame, self.hFlip);
+			self.sprite.drawFrame(gfx, x, y, Math.floor(self.spriteFrame), self.hFlip);
 			if(self.alpha != 1.0) gfx.setAlpha(1.0);
 		});
+	}
+	setSpriteLoop(sprite, hFlip) {
+		this.setSprite(sprite, 0, hFlip)
+		var numFrames = this.sprite.getNumFrames()
+		var dt = this.sprite.getFPS() / numFrames
+
+		var self = this
+		var fnLoop = function() {
+			console.log("loop sprite - " + self.spriteFrame)
+			self.spriteFrame = 0
+			self.setTween("spriteFrame", dt, numFrames -1, fnLoop)
+		}
+		fnLoop()
 	}
 	setAnim( anim ) {
 		if (this.serializable) {
@@ -477,7 +490,7 @@ class NodeView extends BaseListener {
 		this.labelStyle = style;
 	}
   
-  setTextInput( w, h ) {
+  	setTextInput( w, h ) {
 		if (this.serializable) {
 			this.serializeData.push({"call":"setTextInput", "w":w, "h":h})
 		}

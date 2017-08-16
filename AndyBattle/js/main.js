@@ -26,6 +26,7 @@ var game_create = function()
 			"gfx/ui/btn_dark.sprite",
 			"gfx/ui/btn_white.sprite",
 			"gfx/avatars/avatars.spb",
+			"gfx/open/flames.sprite",
 			"fpql:gfx/avatars/avatar.anim:hero_",
 			"fpql:gfx/avatars/avatar.anim:mage_",
 			"fpql:gfx/avatars/avatar.anim:centaur_"
