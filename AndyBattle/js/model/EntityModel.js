@@ -50,12 +50,21 @@ class EntityModel extends ICastEntity {
 		this.m_abilities = [];
 
 		this.m_abilityTargets = new CastTarget();
+		
+		this.meleeAbility = this._createAbility("Melee")
+		this.m_abilities.push(this.meleeAbility)
 
-		var abilityJson = g_abilities["Melee"];
+		if (json.avatar == "mage") {
+			this.rangedAbility = this._createAbility("Fireball")
+			this.m_abilities.push(this.rangedAbility)
+		}
+	}
+
+	_createAbility(jsonName) {
+		var abilityJson = g_abilities[jsonName];
 		var castCommandModel = new CastCommandModel( abilityJson );
 		var castCommandState = new CastCommandState(castCommandModel, this);
-		
-		this.meleeAbility = castCommandState;
+		return castCommandState
 	}
 
 	canAct() {
@@ -89,7 +98,7 @@ class EntityModel extends ICastEntity {
 
 	//array of abilities
 	getAbilities() {
-		return [ this.meleeAbility ];
+		return this.m_abilities;
 	}
 	
 	isCastingOrChanneling() {

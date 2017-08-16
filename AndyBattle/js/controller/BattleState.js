@@ -29,6 +29,7 @@ class BattleState extends AppState {
 
 		var self = this
 		var fnOnAnimationComplete = function() {
+			console.log("cast anim complete")
 			self.action_endTurn(entityModel)
 		}
 
@@ -40,6 +41,10 @@ class BattleState extends AppState {
 					this.view.animateMeleeAttack(entityModel, targetEntityModel, function() {
 						ability.startCast();
 					}, fnOnAnimationComplete)
+				break;
+				case "beginCast":
+					ability.startCast()
+					this.view.animateBeginCast(entityModel, fnOnAnimationComplete)
 				break;
 				default:
 					console.warn("castAbility has no animation implementation for " + startCast)

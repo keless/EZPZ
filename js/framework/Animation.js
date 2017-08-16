@@ -245,7 +245,7 @@ class FourPoleAnimationInstance extends AnimationInstance {
 		}else {
 			// fall back to a sprite without direction
 			this.drawSprite = this.pAnimation.sprites[ this.currAnim ];
-			console.log("fall back to non-directional for " + this.currAnim + " sprite " + this.drawSprite.path)
+			//console.log("fall back to non-directional for " + this.currAnim + " sprite " + this.drawSprite.path)
 		}
 
 		var state = this.pAnimation.graph[ this.currAnim ];

@@ -9,13 +9,31 @@ var g_abilities = {
 						"effectType": "damage",
 						"damageType": "piercing",
 						"targetStat": "hp_curr",
-						"valueBase": 2,
+						"valueBase": 10,
 						"valueStat": "str_curr",
-						"valueMultiplier": 2,
+						"valueMultiplier": 1,
 						"react": "shake"
 				}
 		],
 
 		"startCast":"meleeAttack"
+	},
+	"Fireball":{
+		"name":"Fireball",
+		"castTime":1,
+		"cooldownTime":0,
+		"range": 4,
+		"effectsOnCast": [
+				{
+						"effectType": "damage",
+						"damageType": "fire",
+						"targetStat": "hp_curr",
+						"valueBase": 5,
+						"valueStat": "int_curr",
+						"valueMultiplier": 2,
+						"react": "fire"
+				}
+		],
+		"startCast":"beginCast"
 	}
 }

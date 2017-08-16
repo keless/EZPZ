@@ -99,18 +99,7 @@ class BattleStateModel extends BaseStateModel {
 	isBattleOver() {
 		//for each faction
 		for(var f=0; f< this.factions.length; f++) {
-			var allDead = true
-			//check if all units are dead
-			for(var i=0; i < this.factions[f].length; i++) {
-				if (!this.entities[i].isDead()) {
-					allDead = false
-					break;
-				}
-			}
-			if (allDead) {
-				console.log("faction " + f + " is defeated")
-				return true
-			}
+			if (this.isFactionDead(f)) return true
 		}
 		return false
 	}

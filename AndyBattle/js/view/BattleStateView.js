@@ -76,8 +76,24 @@ class BattleStateView extends BaseStateView {
 		return portraits
 	}
 
+	animateBeginCast(fromModel, fnOnAnimComplete) {
+		// View - do casting animation
+		var fx = fromModel.pos.x
+		var fy = fromModel.pos.y
+
+		var fromNode = this.gridNodes[fy][fx]
+		var unitView = fromNode.getChildByIdx(0)
+
+		unitView.animEvent(0, "cast")
+
+		// not really doing anything, but wait 1.0
+		unitView.tweenPos(1.0, new Vec2D(0,0), function() {
+			if (fnOnAnimComplete) fnOnAnimComplete()
+		})
+	}
+
 	animateMeleeAttack(fromModel, toModel, fnOnHit, fnOnAnimComplete) {
-		// View - do attack animation + damage number
+		// View - do attack animation
 		var fx = fromModel.pos.x
 		var fy = fromModel.pos.y
 		var tx = toModel.pos.x
@@ -98,14 +114,10 @@ class BattleStateView extends BaseStateView {
 		//animate towards target
 		console.log(" anim - start")
 		unitView.tweenPos(0.4, delta, function() {
-
-			console.log(" anim - hit")
 			if (fnOnHit) fnOnHit()
 
 			//animate away from target
 			unitView.tweenPos(0.6, new Vec2D(0,0), function() {
-				console.log(" anim - complete")
-
 				unitView.animEvent(0, "idle")
 				if (fnOnAnimComplete) fnOnAnimComplete()
 			})
