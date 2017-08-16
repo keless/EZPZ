@@ -129,6 +129,14 @@ class BattleStateView extends BaseStateView {
 		var entityModel = e.entity
 		var victimView = this.gridNodes[entityModel.pos.y][entityModel.pos.x].getChildByIdx(0)
 
+		if (e.type == "fire") {
+			var flame = new NodeView()
+			flame.pixelated = true
+			flame.setSpriteLoop("gfx/open/flames.sprite", false)
+			victimView.addChild(flame) //first add to victim to get its offset
+			this.overLayer.addChildKeepingWorldPos(flame)
+			flame.tweenRemoveFromParent(0.5)
+		}
 		
 		var direction = (e.direction.x > 0) ? 1 : -1
 

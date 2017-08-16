@@ -388,7 +388,6 @@ class NodeView extends BaseListener {
 
 		var self = this
 		var fnLoop = function() {
-			console.log("loop sprite - " + self.spriteFrame)
 			self.spriteFrame = 0
 			self.setTween("spriteFrame", dt, numFrames -1, fnLoop)
 		}
@@ -832,7 +831,16 @@ class NodeView extends BaseListener {
 		}
 		this.actions.length = 0;
 	}
-	
+
+	tweenRemoveFromParent( dt, fnOnComplete ) {
+		var action = new NodeAction_noProperty(dt)
+		var self = this
+		action.fnOnComplete = function() {
+			self.removeFromParent()
+			if (fnOnComplete) fnOnComplete()
+		}
+		this.actions.push(action)
+	}
 	tweenScale( dt, endVal, fnOnComplete ) {
 		this.setTween("scale", dt, endVal, fnOnComplete);	
 	}
@@ -929,6 +937,34 @@ class NodeAction_vec2d extends NodeAction {
 	getInterpolatedVal( pct ) {
 		var delta = this.endVal.getVecSub( this.startVal );
 		return this.startVal.getVecAdd( delta.scalarMult( pct ) );
+	}
+}
+
+class NodeAction_noProperty extends NodeAction {
+	constructor( lifeTime ) {
+		super(undefined, lifeTime, undefined)
+	}
+
+	setTarget( target ) {
+		this.target = target;
+		this.startVal = 0
+	}
+
+	Update( ct ) {
+		if( this.startTime == 0 ) {
+			this.startTime = ct;
+		}
+		//determine end or continue
+		var pct = this._calculateDT(ct);
+		//if end
+		if( pct >= 1) {
+			//end
+			this.isDone = true;
+			if( this.fnOnComplete ) {
+				this.fnOnComplete();
+				this.fnOnComplete = null;
+			}
+		}
 	}
 }
 
