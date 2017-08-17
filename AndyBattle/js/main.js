@@ -14,7 +14,7 @@ var game_create = function()
 	window.app = app;
 	
 	var RP = Service.Get("rp")
-  RP.baseURL = "AndyBattle/"
+  	RP.baseURL = "AndyBattle/"
 
 	var stateController = Service.Get("state");
 	stateController.addState("loading", LoadingState);

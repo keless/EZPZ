@@ -10,9 +10,9 @@ var graph = new Graph([
   [0,1,1,0],
   [0,0,1,1]
 ]);
-var start = graph.nodes[0][0];  //expects nodes[x][y]
-var end = graph.nodes[1][2];
-var result = astar.search(graph.nodes, start, end);
+var start = graph.grid[0][0];  //expects nodes[x][y]
+var end = graph.grid[1][2];
+var result = astar.search(graph, start, end);
 // result is an array containing the shortest path
 */
 (function(definition) {

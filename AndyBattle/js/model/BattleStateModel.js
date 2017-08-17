@@ -195,7 +195,7 @@ class BattleStateModel extends BaseStateModel {
 					//use astar to chose where to move
 					//0) get nearest enemy
 					var nearestEnemy = this.getNearestLivingEnemy(entityModel)
-					if (nearestEnemy != null && false) { //xxx WIP - debug astar
+					if (nearestEnemy != null) {
 						//1) run Astar
 						var path = this.getAstarForEntity(entityModel, nearestEnemy.pos)
 						//2) choose first square in path (if available)
@@ -221,24 +221,25 @@ class BattleStateModel extends BaseStateModel {
 	}
 
 	getAstarForEntity(entityModel, targetPos) {
-		var graph = this.getPathingGridForEntity(entityModel)
-		var start = graph.nodes[entityModel.pos.x][entityModel.pos.y];  //expects nodes[x][y]
-		var end = graph.nodes[targetPos.x][targetPos.y];
+		var graph = this.getPathingGridForEntity(entityModel, targetPos)
+		var start = graph.grid[entityModel.pos.x][entityModel.pos.y];  //expects nodes[x][y]
+		var end = graph.grid[targetPos.x][targetPos.y];
 		return astar.search(graph, start, end);
 	}
 
-	getPathingGridForEntity(entityModel) {
+	getPathingGridForEntity(entityModel, toPos) {
 		var grid = []
 		for (var x=0; x<this.gridW; x++) {
 			var row = []
 			for (var y=0; y<this.gridH; y++) {
-				row.push((this.gridNodes[y][x].entity == null) ? 0 : 1)
+				row.push((this.gridNodes[y][x].entity == null) ? 1 : 0)
 			}
 			grid.push(row)
 		}
 
-		//finally, make the starting point (the entity's position) open
+		//finally, make the starting point (the entity's position) and end point open
 		grid[entityModel.pos.x][entityModel.pos.y] = 1
+		grid[toPos.x][toPos.y] = 1
 
 		return new Graph(grid)
 	}
