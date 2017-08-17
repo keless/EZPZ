@@ -191,7 +191,22 @@ class BattleStateModel extends BaseStateModel {
 					var x = entityModel.pos.x
 					var y = entityModel.pos.y
 					var forwardDirection = this.getFactionDirection(entityModel.factionIdx)
-					if (this.isValidPos(x + forwardDirection, y) && this.isSpaceEmpty(x + forwardDirection, y)) {
+
+					//use astar to chose where to move
+					//0) get nearest enemy
+					var nearestEnemy = this.getNearestLivingEnemy(entityModel)
+					if (nearestEnemy != null && false) { //xxx WIP - debug astar
+						//1) run Astar
+						var path = this.getAstarForEntity(entityModel, nearestEnemy.pos)
+						//2) choose first square in path (if available)
+						if (path.length == 0) {
+							this.pState.action_endTurn(entityModel)
+						}else {
+							var moveTo = path[0]
+							this.pState.action_moveUnit(x, y, moveTo.x, moveTo.y)
+						}
+					}else  if (this.isValidPos(x + forwardDirection, y) && this.isSpaceEmpty(x + forwardDirection, y)) {
+						//TODO: remove this once astar is working
 						//try to move forward
 						this.pState.action_moveUnit(x, y, x + forwardDirection, y)
 					} else {
@@ -203,6 +218,51 @@ class BattleStateModel extends BaseStateModel {
 			}
 
 		}
+	}
+
+	getAstarForEntity(entityModel, targetPos) {
+		var graph = this.getPathingGridForEntity(entityModel)
+		var start = graph.nodes[entityModel.pos.x][entityModel.pos.y];  //expects nodes[x][y]
+		var end = graph.nodes[targetPos.x][targetPos.y];
+		return astar.search(graph, start, end);
+	}
+
+	getPathingGridForEntity(entityModel) {
+		var grid = []
+		for (var x=0; x<this.gridW; x++) {
+			var row = []
+			for (var y=0; y<this.gridH; y++) {
+				row.push((this.gridNodes[y][x].entity == null) ? 0 : 1)
+			}
+			grid.push(row)
+		}
+
+		//finally, make the starting point (the entity's position) open
+		grid[entityModel.pos.x][entityModel.pos.y] = 1
+
+		return new Graph(grid)
+	}
+
+	getNearestLivingEnemy(currentEntity) {
+		var enemies = []
+		for (var i=0; i<this.entities.length; i++) {
+			if (this.entities[i].factionIdx != currentEntity.factionIdx && !this.entities[i].isDead()) {
+				enemies.push(this.entities[i])
+			}
+		}
+
+		if (enemies.length == 0) {
+			return null
+		}
+
+		var pos = currentEntity.pos.clone()
+		
+		//sort by closest distance
+		enemies.sort(function(a,b){
+			return a.pos.getDistSqFromVec(pos) - b.pos.getDistSqFromVec(pos)
+		})
+
+		return enemies[0]
 	}
 
 	// return [] of EntityModels adjacent to 'x,y' that have a different factionIdx than the entity in 'x,y'
