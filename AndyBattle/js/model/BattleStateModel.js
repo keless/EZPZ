@@ -205,10 +205,6 @@ class BattleStateModel extends BaseStateModel {
 							var moveTo = path[0]
 							this.pState.action_moveUnit(x, y, moveTo.x, moveTo.y)
 						}
-					}else  if (this.isValidPos(x + forwardDirection, y) && this.isSpaceEmpty(x + forwardDirection, y)) {
-						//TODO: remove this once astar is working
-						//try to move forward
-						this.pState.action_moveUnit(x, y, x + forwardDirection, y)
 					} else {
 						//skip turn
 						this.pState.action_endTurn(entityModel)
