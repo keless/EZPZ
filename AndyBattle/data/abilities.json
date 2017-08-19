@@ -16,7 +16,7 @@ var g_abilities = {
 				}
 		],
 
-		"startCast":"meleeAttack"
+		"startCast":"attack"
 	},
 	"Fireball":{
 		"name":"Fireball",
@@ -34,6 +34,6 @@ var g_abilities = {
 						"react": "fire"
 				}
 		],
-		"startCast":"beginCast"
+		"startCast":"cast"
 	}
 }

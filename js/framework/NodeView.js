@@ -282,6 +282,7 @@ class NodeView extends BaseListener {
 			if(self.alpha != 1.0) gfx.setAlpha(1.0);
 		});
 	}
+	// arrVerts is an array of Vec2Ds
 	setPolygon( arrVerts, fill, stroke, strokeSize ) {
 		if (this.serializable) {
 			this.serializeData.push({"call":"setPolygon", "arrVerts":arrVerts, "fill":fill, "stroke":stroke, "strokeSize":strokeSize})
@@ -832,14 +833,19 @@ class NodeView extends BaseListener {
 		this.actions.length = 0;
 	}
 
-	tweenRemoveFromParent( dt, fnOnComplete ) {
+	tweenWait(dt, fnOnComplete) {
 		var action = new NodeAction_noProperty(dt)
 		var self = this
 		action.fnOnComplete = function() {
-			self.removeFromParent()
 			if (fnOnComplete) fnOnComplete()
 		}
 		this.actions.push(action)
+	}
+	tweenRemoveFromParent( dt, fnOnComplete ) {
+		var self = this
+		this.tweenWait(dt, function() {
+			self.removeFromParent()
+		})
 	}
 	tweenScale( dt, endVal, fnOnComplete ) {
 		this.setTween("scale", dt, endVal, fnOnComplete);	

@@ -84,10 +84,7 @@ class BattleStateView extends BaseStateView {
 		var fromNode = this.gridNodes[fy][fx]
 		var unitView = fromNode.getChildByIdx(0)
 
-		unitView.animEvent(0, "cast")
-
-		// not really doing anything, but wait 1.0
-		unitView.tweenPos(1.0, new Vec2D(0,0), function() {
+		unitView.tweenWait(1.0, function() {
 			if (fnOnAnimComplete) fnOnAnimComplete()
 		})
 	}
@@ -108,17 +105,17 @@ class BattleStateView extends BaseStateView {
 
 		var direction = (fx < tx) ? 1 : -1
 
-		unitView.animEvent(0, "cast")
+		//unitView.animEvent(0, "attack")
 
 		var self = this
 		//animate towards target
 		console.log(" anim - start")
 		unitView.tweenPos(0.4, delta, function() {
 			if (fnOnHit) fnOnHit()
+			unitView.animEvent(0, "idle")
 
 			//animate away from target
 			unitView.tweenPos(0.6, new Vec2D(0,0), function() {
-				unitView.animEvent(0, "idle")
 				if (fnOnAnimComplete) fnOnAnimComplete()
 			})
 		})

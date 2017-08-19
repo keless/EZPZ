@@ -5,9 +5,9 @@ class BattleState extends AppState {
 		super();
 
     var factonsJson = [{formations:[
-      {name:"sam", hp:40, str:5, agi:15, int:20, avatar:"mage"}, null, { name:"bob", hp:50, str:10, agi:15, int:5, avatar:"hero"}, null, null, null, null, null, null
+      {name:"myMage", hp:40, str:5, agi:15, int:20, avatar:"mage"}, null, { name:"myHero", hp:50, str:10, agi:15, int:5, avatar:"hero"}, null, null, null, null, null, null
     ]}, {formations:[
-      null, null, {name:"bob", hp:75, str:15, agi:10, int:5, avatar:"centaur"}, null, { name:"ders", hp:40, str:5, agi:10, int:20, avatar:"mage"}, null, null, null, null
+      null, null, {name:"cent", hp:75, str:15, agi:10, int:5, avatar:"centaur"}, null, { name:"eneMage", hp:40, str:5, agi:10, int:20, avatar:"mage"}, null, null, null, null
     ]}]
 
 		this.model = new BattleStateModel(this, factonsJson);
@@ -29,7 +29,7 @@ class BattleState extends AppState {
 
 		var self = this
 		var fnOnAnimationComplete = function() {
-			console.log("cast anim complete")
+			//console.log("cast anim complete")
 			self.action_endTurn(entityModel)
 		}
 
@@ -37,12 +37,13 @@ class BattleState extends AppState {
 		var startCast = ability.getDescriptor("startCast")
 		if (startCast != null) {
 			switch (startCast) {
-				case "meleeAttack":
+				case "attack":
+					ability.startCast();
 					this.view.animateMeleeAttack(entityModel, targetEntityModel, function() {
-						ability.startCast();
+						
 					}, fnOnAnimationComplete)
 				break;
-				case "beginCast":
+				case "cast":
 					ability.startCast()
 					this.view.animateBeginCast(entityModel, fnOnAnimationComplete)
 				break;
@@ -85,6 +86,7 @@ class BattleState extends AppState {
 		})
 	}
 
+/* using castAbility for melee attacks now
 	// Prerequisites:
 	//  * fx,fy has a unit that can attack
 	//	* tx,ty has a unit that can be attacked by fx,fy
@@ -128,6 +130,8 @@ class BattleState extends AppState {
 			})
 		})
 	}
+*/
+
 
 	action_endTurn(currentUnit) {
 		//console.log("turn over")

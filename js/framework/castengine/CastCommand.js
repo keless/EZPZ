@@ -42,6 +42,8 @@ class CastCommandState {
 		var world = CastWorldModel.Get();
 		if (!world.isValid(this.m_iOwner)) return;
 		
+		this.m_iOwner.ce_onCastComplete(CastCommandTime.Get());
+
 		//check for cost (but dont apply it yet)
 		if (this.m_costVal != 0) {
 			var res = this.m_iOwner.getProperty(this.m_costStat);
@@ -95,12 +97,14 @@ class CastCommandState {
 
 	_onChannelStart() {
 		this.m_state = CastCommandState.CHANNELING;
+		this.m_iOwner.ce_onChannelStart(CastCommandTime.Get());
 		this._scheduleCallback(this.m_pModel.channelFreq);
 	}
 	_onChannelComplete() {
 		if (this.m_state != CastCommandState.CHANNELING) return;
 		if (!CastWorldModel.Get().isValid(this.m_iOwner)) return;
 
+		this.m_iOwner.ce_onChannelComplete(CastCommandTime.Get());
 		this._onCooldownStart();
 	}
 	_spawnChannelEffects() {
@@ -241,6 +245,8 @@ class CastCommandState {
 		this.m_state = CastCommandState.CASTING;
 		this.m_timeStart = CastCommandTime.Get();
 		this.m_channelTicks = 0;
+
+		this.m_iOwner.ce_onCastStart(CastCommandTime.Get(), this.getDescriptor("startCast"))
 
 		if (this.m_pModel.castTime == 0) {
 			//handle instant cast

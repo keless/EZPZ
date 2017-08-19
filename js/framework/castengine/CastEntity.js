@@ -36,4 +36,10 @@ class ICastEntity {
 	applyEffect( effect ) {}
 	// in: CastEffect effect
 	removeEffect( effect ) {}
+
+	//state notifications
+	ce_onCastStart(castEngineTime, anim) {}
+	ce_onChannelStart(castEngineTime, anim) {}
+	ce_onCastComplete(castEngineTime) {}
+	ce_onChannelComplete(castEngineTime) {}
 }

@@ -19,6 +19,8 @@ class Facing {
 /*
 	dispatches event:
 	"update" when Update() is called
+	"castStart" when onCastStart, onChannelStart
+	"castEnd" when onCastCompleted, onChannelCompleted
 */
 
 class EntityModel extends ICastEntity {
@@ -92,7 +94,6 @@ class EntityModel extends ICastEntity {
 	}
 
 	Update(ct, dt) {
-		//console.log("entity update")	
 		this.eventBus.dispatch("update");
 	}
 
@@ -169,20 +170,24 @@ class EntityModel extends ICastEntity {
 	//effect is ARRIVING at this entity
 	// in: CastEffect effect
 	applyEffect( effect ) {
-		console.log("todo: iCastEntity applyEffect " + effect)
 		switch(effect.m_type) {
 			case CastEffectType.DAMAGE_STAT:
 				var dir = this.pos.getVecSub(effect.m_pOrigin.pos)
 				EventBus.game.dispatch({evtName:"entityDamaged", damage:effect.m_value, type:effect.m_damageType, entity:this, direction:dir})
 				this.incProperty(effect.m_targetStat, -effect.m_value, effect)
 			break;
+			case CastEffectType.HEAL_STAT:
+				EventBus.game.dispatch({evtName:"entityHealed", damage:effect.m_value, type:effect.m_damageType, entity:this})
+				this.incProperty(effect.m_targetStat, effect.m_value, effect)
+			break;
 			case CastEffectType.BUFF_STAT:
+				console.log("todo: iCastEntity applyEffect BUFF_STAT")
 			break;
 			case CastEffectType.SUPPRESS_STAT:
-			break;
-			case CastEffectType.HEAL_STAT:
+				console.log("todo: iCastEntity applyEffect SUPPRESS_STAT")
 			break;
 			case CastEffectType.SEND_EVENT:
+				console.log("todo: iCastEntity applyEffect SEND_EVENT")
 			break;
 		}
 	}
@@ -198,4 +203,9 @@ class EntityModel extends ICastEntity {
 	removeListener(event, listener) {
 		this.eventBus.removeListener(event, listener);
 	}
+
+	ce_onCastStart(castEngineTime, descriptor) { this.eventBus.dispatch({evtName:"castStart", anim:descriptor}) }
+	ce_onChannelStart(castEngineTime, descriptor) { this.eventBus.dispatch({evtName:"castStart", anim:descriptor}) }
+	ce_onCastComplete(castEngineTime) { this.eventBus.dispatch("castEnd") }
+	ce_onChannelComplete(castEngineTime) { this.eventBus.dispatch("castEnd") }
 }

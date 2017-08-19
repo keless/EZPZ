@@ -35,6 +35,12 @@
     "hero_cast":{
       "frames":[8, 9]
     },
+    "hero_attack":{
+      "frames":[10]
+    },
+    "hero_attackW":{
+      "frames":[11]
+    },
 
     "mage_idleN":{
       "frames":[36, 37]
@@ -63,6 +69,12 @@
     "mage_cast":{
       "frames":[40, 41]
     },
+    "mage_attack":{
+      "frames":[42]
+    },
+    "mage_attackW":{
+      "frames":[43]
+    },
 
     "centaur_idleN":{
       "frames":[52, 53]
@@ -90,6 +102,12 @@
     },
     "centaur_cast":{
       "frames":[56, 57]
+    },
+    "centaur_attack":{
+      "frames":[58]
+    },
+    "centaur_attackW":{
+      "frames":[59]
     }
   }
 }

@@ -13,8 +13,26 @@ class EntityView extends NodeView
 		this.scale = 2.0
 		this.animInstance.setDirection(0, this.pEntityModel.facing)
 		
+		this.SetListener("castStart", this.onCastStart, this.pEntityModel.eventBus )
+		this.SetListener("castEnd", this.onCastEnd, this.pEntityModel.eventBus )
 	}
 
+	onCastStart(e) {
+		console.log(this.pEntityModel.name + " start cast anim", e.anim)
+		this._lastAnim = e.anim
+		this.animEvent(0, e.anim || "cast")
+	}
+	onCastEnd(e) {
+		if (this._lastAnim == undefined) {
+			console.log("wtf")
+		}
+		
+		if (this._lastAnim != "attack") {
+			console.log(this.pEntityModel.name + " end cast anim " + this._lastAnim)
+			this.animEvent(0, "idle")
+		}
+		
+	}
 }
 
 /*

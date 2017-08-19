@@ -164,7 +164,7 @@ class FourPoleAnimation extends Animation {
 				if (RP.hasSprite(baseName + stateName + extName)) {
 					imgsDownloading++
 					RP.getSprite( baseName + stateName + extName, function(e){
-						console.log("got sprite for state " + stateName);
+						//console.log("got sprite for state " + stateName);
 						var sprite = e.res;
 						if(sprite) {
 							self.AttachSprite(stateName, sprite);
