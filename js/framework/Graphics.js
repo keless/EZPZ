@@ -8,6 +8,10 @@ class Graphics {
 
 	constructor( strCanvasName ) {
 		this.canvas = document.getElementById(strCanvasName);
+
+		// disable default right-click context menu over canvas
+		this.canvas.oncontextmenu = function(e) { e.preventDefault(); e.stopPropagation(); }
+
 		this.fillStyle = "#FF0000";
 		this.strokeStyle = "#FFFFFF";
 		this.strokeSize = 1;
@@ -18,6 +22,8 @@ class Graphics {
 		this.useTextHeightHack = Config ? Config.useTextHeightHack : false;
 		this.verbose = false;
 		
+		//this.ctx3d = this.canvas.getContext("webgl") || this.canvas.getContext("experimental-webgl")
+
 		Service.Add("gfx", this);
 	}
 	

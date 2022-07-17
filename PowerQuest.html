@@ -1,7 +1,7 @@
 <html>
 <head>
     <!-- external libraries -->
-    <link rel="icon" type="image/png" href="AndyBattle/gfx/favicon.png">
+    <link rel="icon" type="image/png" href="PowerQuest/gfx/favicon.png">
     <style type="text/css"> body { margin: 0; padding: 0; color: #333333; background-image:url(''); } </style>
     
     <!-- external code -->
@@ -14,6 +14,7 @@
     <script type="text/javascript" src="js/framework/AppStateController.js"></script>
     <script type="text/javascript" src="js/framework/AudioManager.js"></script>
     <script type="text/javascript" src="js/framework/NodeView.js"></script>
+    <script type="text/javascript" src="js/framework/TableView.js"></script>
     <script type="text/javascript" src="js/framework/ButtonView.js"></script>
     <script type="text/javascript" src="js/framework/EventBus.js"></script>
     <script type="text/javascript" src="js/framework/Graphics.js"></script>
@@ -28,31 +29,24 @@
     <script type="text/javascript" src="js/framework/Utility.js"></script>
     <script type="text/javascript" src="js/framework/Vec2D.js"></script>
 
-    <!-- cast engine -->
-    <script type="text/javascript" src="js/framework/castengine/CastCommand.js"></script>
-    <script type="text/javascript" src="js/framework/castengine/CastEffect.js"></script>
-    <script type="text/javascript" src="js/framework/castengine/CastEntity.js"></script>
-    <script type="text/javascript" src="js/framework/castengine/CastTarget.js"></script>
-    <script type="text/javascript" src="js/framework/castengine/CastWorldModel.js"></script>
-
     <!-- game code -->
     <!-- data resources -->
-    <script type="text/javascript" src="AndyBattle/data/abilities.json"></script>
+    <script type="text/javascript" src="PowerQuest/data/gameData.json"></script>
 
         <!-- model -->
-    <script type="text/javascript" src="AndyBattle/js/model/EntityModel.js"></script>
-    <script type="text/javascript" src="AndyBattle/js/model/BattleStateModel.js"></script>
+    <script type="text/javascript" src="PowerQuest/js/model/EntityModel.js"></script>
+    <script type="text/javascript" src="PowerQuest/js/model/GameStateModel.js"></script>
         <!-- view -->
-    <script type="text/javascript" src="AndyBattle/js/view/EntityView.js"></script>
-    <script type="text/javascript" src="AndyBattle/js/view/PortraitView.js"></script>
-    <script type="text/javascript" src="AndyBattle/js/view/BattleStateView.js"></script>
+    <script type="text/javascript" src="PowerQuest/js/view/EntityView.js"></script>
+    <script type="text/javascript" src="PowerQuest/js/view/EntityLibraryPanelView.js"></script>
+    <script type="text/javascript" src="PowerQuest/js/view/GameStateView.js"></script>
 
     
         <!-- controller -->
-    <script type="text/javascript" src="AndyBattle/js/controller/MenuState.js"></script>
-    <script type="text/javascript" src="AndyBattle/js/controller/BattleState.js"></script>
+    <script type="text/javascript" src="PowerQuest/js/controller/MenuState.js"></script>
+    <script type="text/javascript" src="PowerQuest/js/controller/GameState.js"></script>
 
-    <script type="text/javascript" src="AndyBattle/js/main.js"></script>
+    <script type="text/javascript" src="PowerQuest/js/main.js"></script>
 
     <script type="text/javascript">
         document.addEventListener( "DOMContentLoaded", function() {

@@ -1,0 +1,26 @@
+var g_gameData = {
+	"windmill":{
+		"name": "Windmill",
+		"label":"W",
+		"cost": 1,
+		"lifeTime": 10,
+		"power": 4,
+		"heat": 0,
+	},
+	"solarpanel":{
+		"name":"Solar Panel",
+		"label":"S",
+		"cost": 10,
+		"lifeTime": 100,
+		"power": 0,
+		"heat": 4,
+	},
+	"generator":{
+		"name":"Generator",
+		"label":"G",
+		"cost": 10,
+		"heat": -4,
+		"power": 4,
+		"maxHeat": 100
+	}
+}

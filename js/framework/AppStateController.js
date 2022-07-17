@@ -1,12 +1,48 @@
 "use strict"; //ES6
 
-class AppState {
+class BaseListener {
 	constructor() {
+		this._listeners = [];
+	}
+	
+	Destroy( ) {
+		this.DestroyListeners();
+	}
+	
+	SetListener(evtName, fn, bus) {
+		if(!bus) {
+			bus = EventBus.ui;
+		}
+		if(!fn) {
+			console.error("SetListener given invalid callback function for " + evtName );
+		}
+		
+		bus.addListener(evtName, fn.bind(this));
+		this._listeners.push({bus:bus, evt:evtName, fn:fn});
+	}
+	RemoveListener(evtName, fn, bus) {
+		if(!bus) {
+			bus = EventBus.ui;
+		}
+		bus.removeListener(evtName, fn.bind(this));
+	}
+	DestroyListeners() {
+		for(var l of this._listeners) {
+			l.bus.removeListener(l.evt, l.fn);
+		}
+	}
+}
+
+class AppState extends BaseListener {
+	constructor() {
+		super();
+
 		this.view = null; // type: BaseStateView
 		this.model = null; // type: BaseStateModel
 	}
 	
 	Destroy() {
+		super.Destroy();
 		if(this.view && this.view.Destroy) this.view.Destroy();
 		if(this.model && this.model.Destroy) this.model.Destroy();
 	}
@@ -38,39 +74,6 @@ class AppStateController {
 		
 		//todo: Switch to ...rest arguments
 		this.currentState = new this.stateMap[stateName](params);
-	}
-}
-
-class BaseListener {
-	constructor() {
-		this._listeners = [];
-	}
-	
-	Destroy( ) {
-		this.DestroyListeners();
-	}
-	
-	SetListener(evtName, fn, bus) {
-		if(!bus) {
-			bus = EventBus.ui;
-		}
-		if(!fn) {
-			console.error("SetListener given invalid callback function for " + evtName );
-		}
-		
-		bus.addListener(evtName, fn.bind(this));
-		this._listeners.push({bus:bus, evt:evtName, fn:fn});
-	}
-	RemoveListener(evtName, fn, bus) {
-		if(!bus) {
-			bus = EventBus.ui;
-		}
-		bus.removeListener(evtName, fn.bind(this));
-	}
-	DestroyListeners() {
-		for(var l of this._listeners) {
-			l.bus.removeListener(l.evt, l.fn);
-		}
 	}
 }
 

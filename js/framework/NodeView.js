@@ -258,6 +258,8 @@ class NodeView extends BaseListener {
 			this.serializeData.push({"call":"setCircle", "radius":radius, "fillStyle":fillStyle, "strokeStyle":strokeStyle })
 		}
 
+		this.size.setVal( Math.max(this.size.x, radius*2), Math.max(this.size.y, radius*2));
+
 		if(this.circleRadius) {
 			console.error("NodeView: already has a circle, abort!");
 			return;
@@ -279,6 +281,19 @@ class NodeView extends BaseListener {
 		this.fnCustomDraw.push(function(gfx, x,y, ct){
 			if(self.alpha != 1.0) gfx.setAlpha(self.alpha);
 			gfx.drawRectEx(x, y, self.size.x, self.size.y, fillStyle);
+			if(self.alpha != 1.0) gfx.setAlpha(1.0);
+		});
+	}
+	setRectOutline( w, h, stroke, strokeSize ) {
+		if (this.serializable) {
+			//todo
+		}
+
+		this.size.setVal( Math.max(this.size.x, w), Math.max(this.size.y, h));
+		var self = this;
+		this.fnCustomDraw.push(function(gfx, x,y, ct){
+			if(self.alpha != 1.0) gfx.setAlpha(self.alpha);
+			gfx.drawRectOutlineEx(x, y, self.size.x, self.size.y, stroke, strokeSize);
 			if(self.alpha != 1.0) gfx.setAlpha(1.0);
 		});
 	}
@@ -490,7 +505,7 @@ class NodeView extends BaseListener {
 		this.labelStyle = style;
 	}
   
-  	setTextInput( w, h ) {
+  setTextInput( w, h ) {
 		if (this.serializable) {
 			this.serializeData.push({"call":"setTextInput", "w":w, "h":h})
 		}

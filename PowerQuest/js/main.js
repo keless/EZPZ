@@ -9,27 +9,25 @@ class Config {
 }
 
 var game_create = function()
-{
+{	
 	var app = new Application("PowerQuest", "content");
 	window.app = app;
 	
 	var RP = Service.Get("rp")
-  RP.baseURL = "PowerQuest/"
+  	RP.baseURL = "PowerQuest/"
 
 	var stateController = Service.Get("state");
 	stateController.addState("loading", LoadingState);
 	stateController.addState("menu", MenuState);
-	stateController.addState("game", BattleState);
+	stateController.addState("game", GameState);
 	
 	var resources = [
-			"gfx/ui/btn_blue.sprite",
-			"gfx/ui/btn_dark.sprite",
-			"gfx/ui/btn_white.sprite",
-			"gfx/avatars/avatars.spb",
-			"gfx/open/flames.sprite",
-			"fpql:gfx/avatars/avatar.anim:hero_",
-			"fpql:gfx/avatars/avatar.anim:mage_",
-			"fpql:gfx/avatars/avatar.anim:centaur_"
+		"gfx/ui/btn_blue.sprite",
+		"gfx/ui/btn_dark.sprite",
+		"gfx/ui/btn_white.sprite",
+		"gfx/aelius_floor_pattern.jpg",
+		"gfx/aelius_floor.jpg",
+		"gfx/aelius_floor.jpg",
 			];
 	stateController.gotoState("loading", [resources, "game"]);
 	
