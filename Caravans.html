@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- external libraries -->
+    <link rel="icon" type="image/png" href="Caravans/gfx/favicon.png">
+    <style type="text/css"> body { margin: 0; padding: 0; color: #333333; background-image:url(''); } </style>
+    
+    <!-- external code -->
+    <script type="text/javascript" src="js/framework/ext/uuid.js"></script>
+    <script type="text/javascript" src="js/framework/ext/astar.js"></script>
+    <!-- framework code -->
+    <script type="text/javascript" src="js/framework/Service.js"></script>
+    <script type="text/javascript" src="js/framework/Animation.js"></script>
+    <script type="text/javascript" src="js/framework/Application.js"></script>
+    <script type="text/javascript" src="js/framework/AppStateController.js"></script>
+    <script type="text/javascript" src="js/framework/AudioManager.js"></script>
+    <script type="text/javascript" src="js/framework/NodeView.js"></script>
+    <script type="text/javascript" src="js/framework/TableView.js"></script>
+    <script type="text/javascript" src="js/framework/ButtonView.js"></script>
+    <script type="text/javascript" src="js/framework/EventBus.js"></script>
+    <script type="text/javascript" src="js/framework/Graphics.js"></script>
+    <script type="text/javascript" src="js/framework/LoadingState.js"></script>
+    
+    <script type="text/javascript" src="js/framework/ParticleSystem.js"></script>
+    <script type="text/javascript" src="js/framework/Physics.js"></script>
+    <script type="text/javascript" src="js/framework/ResourceProvider.js"></script>
+    <script type="text/javascript" src="js/framework/SaveData.js"></script>
+    
+    <script type="text/javascript" src="js/framework/TiledMap.js"></script>
+    <script type="text/javascript" src="js/framework/Utility.js"></script>
+    <script type="text/javascript" src="js/framework/Vec2D.js"></script>
+
+    <!-- game code -->
+    <!-- data resources -->
+    <script type="text/javascript" src="Caravans/data/gameData.json"></script>
+
+        <!-- model -->
+    <script type="text/javascript" src="Caravans/js/model/EntityModel.js"></script>
+    <script type="text/javascript" src="Caravans/js/model/GameStateModel.js"></script>
+        <!-- view -->
+    <script type="text/javascript" src="Caravans/js/view/EntityView.js"></script>
+    <script type="text/javascript" src="Caravans/js/view/EntityLibraryPanelView.js"></script>
+    <script type="text/javascript" src="Caravans/js/view/GameStateView.js"></script>
+
+    
+        <!-- controller -->
+    <script type="text/javascript" src="Caravans/js/controller/MenuState.js"></script>
+    <script type="text/javascript" src="Caravans/js/controller/GameState.js"></script>
+
+    <script type="text/javascript" src="Caravans/js/main.js"></script>
+
+
+        <!-- generator -->
+    <script type="module">
+        //import {geoDelaunay} from "https://cdn.skypack.dev/d3-geo-voronoi@2";
+        import {Delaunay} from "https://cdn.skypack.dev/d3-delaunay@6";
+        document.Delaunay = Delaunay
+    </script>
+
+    <script type="text/javascript" src="Caravans/js/model/generator/Terrain.js"></script>
+
+    <script type="text/javascript">
+        document.addEventListener( "DOMContentLoaded", function() {
+            document.removeEventListener( "DOMContentLoaded", arguments.callee, false );
+             game_create();
+        }, false );
+    </script>
+</head>
+
+<body>
+<center>
+<canvas id="content" width="1024" height="1024" style="border:1px solid #000000;" tabindex="1"></canvas>
+</center>
+
+
+<hr>
+<a href="todo.txt" target="_window">Dev Log</a>
+</body>
+</html>
