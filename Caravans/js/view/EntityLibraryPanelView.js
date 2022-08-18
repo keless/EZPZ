@@ -59,7 +59,6 @@ class EntityLibraryIconView extends NodeView
   constructor( elementId, entityJsonData ) {
     super();
 
-    console.log("xxx create entity library icon")
     this.itemId = elementId
     this.entityJson = entityJsonData
 

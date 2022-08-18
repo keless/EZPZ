@@ -37,10 +37,8 @@ class TerrainGenerator {
     }
 
     this.countryVoronoi = null
-    this.cityVoronoi = null
-
-    console.log("created 5 countries with " + this.allPOIs.length  + " total cities")
-    console.log("in order " + this.factions[0].color + "," + this.factions[1].color + "," + this.factions[2].color + "," + this.factions[3].color + "," + this.factions[4].color)
+    this.allVoronoi = null
+    this.vornoiCellToFactionMap = {}
   }
 
   generate() {
@@ -51,14 +49,38 @@ class TerrainGenerator {
     // 0) Generate points on a regular offset of `{gridSize, gridSize}` with a margin from the edges of `gridSize+1`
     //zzz todo: generate UNIQUE points
     var margin = gridSize + 1
-    var points = []
+    //var points = []
 
     var numCountries = this.countries.length
-    var numPointsToGenerate = this.countries.length + getRand(2*numCountries, 5*numCountries)
-    for (let i=0; i< numPointsToGenerate; i++) {
-      var vec = new Vec2D(getRand(margin, this.regionWidth - margin), getRand(margin, this.regionHeight - margin))
-      vec.setVal(Math.floor(vec.x / gridSize) * gridSize, Math.floor(vec.y / gridSize) * gridSize)
-      points.push(vec)
+    var numCities = getRand(2*numCountries, 5*numCountries)
+    var numOtherPOI = 150 + getRand(0, 10)
+    var numPointsToGenerate = this.countries.length + numCities + numOtherPOI + 50
+
+    var initialPoints = this._generateUniquePoints(numPointsToGenerate, gridSize, margin,  this.regionWidth, this.regionHeight)
+    
+    var allDelaunyPoints = []
+    for (let i=0; i<initialPoints.length; i++) {
+      let pos = initialPoints[i]
+      allDelaunyPoints.push([pos.x, pos.y])
+    }
+    let allDelauny = document.Delaunay.from(allDelaunyPoints)
+    this.allVoronoi = allDelauny.voronoi([0,0, this.regionWidth, this.regionHeight])
+
+    //zzz TODO: remove edge cells (set them as water or wilderness or something)
+    var points = initialPoints.slice()
+    this.edgeCellIndicies = []
+
+    // Remove edge cells from points array
+    for (let i= initialPoints.length - 1; i >= 0; i-- ) {
+      let polygon = this.allVoronoi.cellPolygon(i)
+      for (let v=0; v< polygon.length; v++) {
+        var posArr = polygon[v]
+        if (posArr[0] == 0 || posArr[0] >= this.regionWidth || posArr[1] == 0 || posArr[1] >= this.regionHeight) {
+          // edge cell detected
+          points.splice(i, 1)
+          this.edgeCellIndicies.push(i)
+        }
+      }
     }
 
     // 1) Choose capital positions:
@@ -78,62 +100,36 @@ class TerrainGenerator {
       let pos = capitalPositions[i]
       this.countries[i].capital.pos.setVec( pos )
       delaunyPoints.push([ pos.x, pos.y ])
+
+      let cellIndex = i
+      let factionIndex = this.countries[i].factionIndex
+      this.vornoiCellToFactionMap[cellIndex] = factionIndex
     }
     
     // Generate the country voronoi graph so we can determine which country each city will end up inside of
     let delauny = document.Delaunay.from(delaunyPoints)
-    let voronoi = delauny.voronoi([0,0, this.regionWidth, this.regionHeight])
-    this.countryVoronoi = voronoi
+    this.countryVoronoi = delauny.voronoi([0,0, this.regionWidth, this.regionHeight])
 
-
-    var allDelaunyPoints = delaunyPoints.slice() // copy array then add to it
     // Choose allegience of city POIs based on inclusion in country's voronoi cell
-    for (let i=0; i< points.length; i++) {
-      var pos = points[i]
+    for (let i=0; i< initialPoints.length; i++) {
+      var pos = initialPoints[i]
+      let cellIndex = i
       for (let c=0; c< this.countries.length; c++) {
-        if (voronoi.contains(c, pos.x, pos.y)) {
-          let city = this.countries[c].addCity(this.nameGenerator, pos)
-          this.allPOIs.push(city)
-          allDelaunyPoints.push([pos.x, pos.y])
+        if (this.countryVoronoi.contains(c, pos.x, pos.y) && !this.edgeCellIndicies.includes(i)) {
+          
+          if (!this.countries[c].capital.pos.equalsVec(pos)) {
+            let poi = this.countries[c].addRandomPOI(this.nameGenerator, pos, cellIndex)
+            // let city = this.countries[c].addCity(this.nameGenerator, pos)
+            this.allPOIs.push(poi)
+          }
+
+          let factionIndex = this.countries[c].factionIndex
+          this.vornoiCellToFactionMap[cellIndex] = factionIndex
+
           continue
         }
       }
-      
     }
-
-
-    /*
-    for (var i=0; i< this.countries.length; i++) {
-      var country = this.countries[i]
-      for (var c=0; c< country.cities.length; c++) {
-        pIdx = this._getPointClosest(points, country.capital.pos)
-
-        let pos = points.splice(pIdx, 1)[0]
-        this.countries[i].cities[c].pos.setVec( pos )
-        allDelaunyPoints.push([ pos.x, pos.y ])
-      }
-    }
-    */
-
-
-
-    let allDelauny = document.Delaunay.from(allDelaunyPoints)
-    let allVoronoi = allDelauny.voronoi([0,0, this.regionWidth, this.regionHeight])
-    this.cityVoronoi = allVoronoi
-
-    // blindly set all cities randomly
-    //zzz todo: replace this
-    /*
-    var pointsOffset = 0
-    for (var i=0; i< this.allPOIs.length; i++) {
-      if (this.allPOIs[i].type == "Capital") {
-        pointsOffset += 1
-        continue
-      }
-
-      this.allPOIs[i].pos.setVec(points[i - pointsOffset])
-    }*/
-
   }
 
   // returns index of 'fromPoints' closest to 'toPoint'
@@ -179,30 +175,67 @@ class TerrainGenerator {
     return distSQ / fromPoints.length
   }
 
+  // Return a [Vec2D] of length 'numPoints' inside a rect with maxWidth, maxHeight dimensions 
+  //  where all points are snapped to gridSize coordinate offsets,
+  //  and no two points exist at the same position
+  // NOTE: this can result in an infinite loop if number of normalized grid points is less than numPoints
+  _generateUniquePoints(numPoints, snapGridSize, margin, maxWidth, maxHeight) {
+    //zzz wip
+
+    var uniqueMap = {}
+    let points = []
+
+    while (points.length < numPoints) {
+      let newPoint = this._generateNormalizedPoint(snapGridSize, margin, maxWidth, maxHeight)
+      let newPointKey = newPoint.toString()
+      if (newPointKey in uniqueMap) {
+        // not unique
+        continue
+      } else {
+        uniqueMap[newPointKey] = true
+        points.push(newPoint)
+      }
+    }
+
+    return points
+  }
+
+  _generateNormalizedPoint(snapGridSize, margin, maxWidth, maxHeight) {
+    var rx = getRand(margin, maxWidth - margin)
+    var ry = getRand(margin, maxHeight - margin)
+    var nx = Math.floor(rx / snapGridSize) * snapGridSize
+    var ny = Math.floor(ry / snapGridSize) * snapGridSize
+    return new Vec2D(nx, ny)
+  }
+
   // Create a nodeView that renders the given generated terrain
   createNodeView(boundsXmin, boundsYmin, boundsXmax, boundsYmax) {
     var node = new NodeView()
     node.size.setVal(boundsXmax - boundsXmin, boundsYmax - boundsYmin);
     node.addCustomDraw((g, x,y, ct) => {
-      for (let poi of this.allPOIs) {
-        let fillStyle = this.factionColors[poi.factionIndex]
-        let strokeStyle = "rgb(0, 0, 0)"
-        let strokeWidth = 2
-        let radius = 5
-        if (poi.type == "Capital") {
-          radius = 10
-        }
-        g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
-      }
 
       //g.ctx.beginPath()
       //this.delauny.render(g.ctx)
       //g.ctx.stroke()
+      for (const cellIndexStr in this.vornoiCellToFactionMap) {
+        let cellIndex = parseInt(cellIndexStr)
+        let factionIndex = this.vornoiCellToFactionMap[cellIndex]
+        g.ctx.strokeStyle = "rgb(0,0,0)"
+        g.ctx.lineWidth = 3
+        let fillStyle = this.factionColors[factionIndex]
+        g.ctx.fillStyle = fillStyle
+        g.ctx.beginPath()
+        this.allVoronoi.renderCell(cellIndex, g.ctx)
+        g.ctx.fill()
+        //g.ctx.stroke()
+      }
+
       g.ctx.strokeStyle = "rgb(0,0,0)"
       g.ctx.lineWidth = 3
       g.ctx.beginPath()
-      this.cityVoronoi.render(g.ctx)
+      this.allVoronoi.render(g.ctx)
       g.ctx.stroke()
+
 
       /*
       g.ctx.strokeStyle = "rgb(50,150,50)"
@@ -210,6 +243,25 @@ class TerrainGenerator {
       g.ctx.beginPath()
       this.countryVoronoi.render(g.ctx)
       g.ctx.stroke()*/
+
+      for (let poi of this.allPOIs) {
+        if (poi.type == "Wilds") {
+          continue
+        }
+
+        let fillStyle = "rgb(150, 150, 150)" //this.factionColors[poi.factionIndex]
+        let strokeStyle = "rgb(0, 0, 0)"
+        let strokeWidth = 2
+        let radius = 3
+        if (poi.type == "City") {
+          radius = 5
+          fillStyle = "rgb(0, 0, 0)"
+        } else if (poi.type == "Capital") {
+          radius = 10
+          fillStyle = "rgb(255, 255, 255)"
+        }
+        g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
+      }
     })
     return node
   }
@@ -236,17 +288,41 @@ class Country {
   constructor(nameGenerator, factionIndex) {
     this.capital = new POI(nameGenerator.city(factionIndex), new Vec2D(0, 0), "Capital", factionIndex)
     this.cities = []
-    /* dont immediately create cities-- use voronoi cells to determine cities that belong to this country during generation instead
-    for (let i=0; i< getRand(this.minCities, this.maxCities); i++) {
-      this.cities.push( new POI(nameGenerator.city(factionIndex), 0, 0, "City", factionIndex))
-    }*/
+    this.otherPOI = []
   }
 
-  addCity(nameGenerator, pos) {
-    let factionIndex = this.capital.factionIndex
-    let city = new POI(nameGenerator.city(factionIndex), pos, "City", factionIndex)
+  get factionIndex() {
+    return this.capital.factionIndex
+  }
+
+  addCity(nameGenerator, pos, factionIndex) {
+    let city = new POI(nameGenerator.city(this.factionIndex), pos, "City", this.factionIndex)
     this.cities.push(city)
     return city
+  }
+
+  addVillage(nameGenerator, pos) {
+    let village = new POI(nameGenerator.city(this.factionIndex), pos, "Village", this.factionIndex)
+    this.otherPOI.push(village)
+    return village
+  }
+
+  addWilderness(pos) {
+    let wilds = new POI("Wilds", pos, "Wilds", this.factionIndex)
+    this.otherPOI.push(wilds)
+    return wilds
+  }
+
+  addRandomPOI(nameGenerator, pos) {
+    let rand = getRand(0,4)
+    switch(rand) {
+      case 0: 
+        return this.addCity(nameGenerator, pos)
+      case 1:
+        return this.addVillage(nameGenerator, pos)
+      default:
+        return this.addWilderness(pos)
+    }
   }
 }
 
