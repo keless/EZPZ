@@ -10,10 +10,8 @@ class GameStateView extends BaseStateView {
 
 		this.gridNodes = []
 		this.gridBase = new NodeView()
-		this.rootView.addChild(this.gridBase)
+		//zzz this.rootView.addChild(this.gridBase)
 		this._createGridNodes()
-
-		this.gridBase.visible = false //zzz
 
 		this.overLayer = new NodeView()
 		this.rootView.addChild(this.overLayer)
@@ -33,9 +31,10 @@ class GameStateView extends BaseStateView {
 		this.SetListener("entityRemoved", this.onEntityRemoved)
 		this.SetListener("tick", this.onTick)
 
-		this.terrain = new TerrainGenerator()
+		this.terrain = new TerrainGenerator(1024, 1024)
 		this.terrain.generate()
-		this.terrainNode = this.terrain.createNodeView(0, 0, 600, 600)
+		this.terrainNode = this.terrain.createNodeView()
+		this.terrainNode.pos.setVal(512, 512)
 		this.rootView.addChild(this.terrainNode)
 	}
 

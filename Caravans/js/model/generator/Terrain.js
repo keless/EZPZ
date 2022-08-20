@@ -7,9 +7,9 @@ class TerrainGenerator {
   //   between 2 and 5 cities
   //   5 to 15 villages
 
-  constructor() {
-    this.regionWidth = 1024
-    this.regionHeight = 1024
+  constructor(w, h) {
+    this.regionWidth = w
+    this.regionHeight = h
 
     this.nameGenerator = new NameGenerator()
 
@@ -30,10 +30,6 @@ class TerrainGenerator {
       this.countries.push(country)
 
       this.allPOIs.push(country.capital)
-      /* do not initally generate cities
-      for (let c=0; c < country.cities.length; c++) {
-        this.allPOIs.push(country.cities[c])
-      }*/
     }
 
     this.countryVoronoi = null
@@ -86,12 +82,15 @@ class TerrainGenerator {
     // 1) Choose capital positions:
     // first is random
     var capitalPositions = []
+    var capitalCellIndicies = []
 
     var pIdx = getRand(0, points.length -1)
     capitalPositions.push(points.splice(pIdx, 1)[0])
+    capitalCellIndicies.push(pIdx)
     for (let i=1; i< this.countries.length; i++) {
       pIdx = this._getPointFurthest(capitalPositions, points)
       capitalPositions.push(points.splice(pIdx, 1)[0])
+      capitalCellIndicies.push(pIdx)
     }
     
     // Set positions on the capitals now 
@@ -99,6 +98,7 @@ class TerrainGenerator {
     for (let i=0; i< capitalPositions.length; i++) {
       let pos = capitalPositions[i]
       this.countries[i].capital.pos.setVec( pos )
+      this.countries[i].capital.cellIndex = capitalCellIndicies[i]
       delaunyPoints.push([ pos.x, pos.y ])
 
       let cellIndex = i
@@ -209,10 +209,16 @@ class TerrainGenerator {
   }
 
   // Create a nodeView that renders the given generated terrain
-  createNodeView(boundsXmin, boundsYmin, boundsXmax, boundsYmax) {
+  createNodeView() {
     var node = new NodeView()
-    node.size.setVal(boundsXmax - boundsXmin, boundsYmax - boundsYmin);
+    node.size.setVal(this.regionWidth, this.regionHeight);
     node.addCustomDraw((g, x,y, ct) => {
+
+
+      if(g.drawCentered) {
+        //zzz wip - offset
+        g.translate(-node.size.x/2, -node.size.y/2)
+      }
 
       //g.ctx.beginPath()
       //this.delauny.render(g.ctx)
@@ -263,16 +269,40 @@ class TerrainGenerator {
         g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
       }
     })
+
+    node.setClick((e)=> {
+
+      for (let i=0; i<this.allPOIs.length; i++) {
+        if (this.allVoronoi.contains(i, e.x, e.y)) {
+          console.log("clicked cell " + i + " at " + e.x +", "+e.y +" which has points " + this.allVoronoi.cellPolygon(i))
+
+          if (e.button == 0) {
+            // left click
+            EventBus.ui.dispatch({evtName: "voronoi left clicked", cell: i})
+          } else if (e.button == 2) {
+            // right click
+            EventBus.ui.dispatch({evtName: "voronoi right clcked", cell: i})
+          }
+          return
+        }
+      }
+
+
+
+      
+    })
+
     return node
   }
 }
 
 class POI {
-  constructor(name, pos, type, factionIndex) {
+  constructor(name, pos, type, factionIndex, cellIndex) {
     this.name = name
     this.pos = pos
     this.type = type
     this.factionIndex = factionIndex
+    this.cellIndex = cellIndex
   }
 }
 
@@ -285,8 +315,8 @@ class Faction {
 }
 
 class Country {
-  constructor(nameGenerator, factionIndex) {
-    this.capital = new POI(nameGenerator.city(factionIndex), new Vec2D(0, 0), "Capital", factionIndex)
+  constructor(nameGenerator, factionIndex, capitalCellIndex) {
+    this.capital = new POI(nameGenerator.city(factionIndex), new Vec2D(0, 0), "Capital", factionIndex, capitalCellIndex)
     this.cities = []
     this.otherPOI = []
   }
@@ -295,33 +325,33 @@ class Country {
     return this.capital.factionIndex
   }
 
-  addCity(nameGenerator, pos, factionIndex) {
-    let city = new POI(nameGenerator.city(this.factionIndex), pos, "City", this.factionIndex)
+  addCity(nameGenerator, pos, cellIndex) {
+    let city = new POI(nameGenerator.city(this.factionIndex), pos, "City", this.factionIndex, cellIndex)
     this.cities.push(city)
     return city
   }
 
-  addVillage(nameGenerator, pos) {
-    let village = new POI(nameGenerator.city(this.factionIndex), pos, "Village", this.factionIndex)
+  addVillage(nameGenerator, pos, cellIndex) {
+    let village = new POI(nameGenerator.city(this.factionIndex), pos, "Village", this.factionIndex, cellIndex)
     this.otherPOI.push(village)
     return village
   }
 
-  addWilderness(pos) {
-    let wilds = new POI("Wilds", pos, "Wilds", this.factionIndex)
+  addWilderness(pos, cellIndex) {
+    let wilds = new POI("Wilds", pos, "Wilds", this.factionIndex, cellIndex)
     this.otherPOI.push(wilds)
     return wilds
   }
 
-  addRandomPOI(nameGenerator, pos) {
+  addRandomPOI(nameGenerator, pos, cellIndex) {
     let rand = getRand(0,4)
     switch(rand) {
       case 0: 
-        return this.addCity(nameGenerator, pos)
+        return this.addCity(nameGenerator, pos, cellIndex)
       case 1:
-        return this.addVillage(nameGenerator, pos)
+        return this.addVillage(nameGenerator, pos, cellIndex)
       default:
-        return this.addWilderness(pos)
+        return this.addWilderness(pos, cellIndex)
     }
   }
 }
