@@ -16,7 +16,7 @@ class TerrainGenerator {
     this.allPOIs = []
 
     // Must correspond to numFactions count
-    this.factionColors = ["rgb(255, 0, 0)", "rgb(0, 0, 255)", "rgb(60, 179, 113)", "rgb(255, 165, 0)", "rgb(238, 130, 238)"]
+    this.factionColors = ["rgb(255, 0, 0)", "rgb(150, 50, 205)", "rgb(60, 179, 113)", "rgb(255, 165, 0)", "rgb(238, 130, 238)"]
 
     this.numFactions = 5
     this.factions = []
@@ -50,60 +50,73 @@ class TerrainGenerator {
     var numCountries = this.countries.length
     var numCities = getRand(2*numCountries, 5*numCountries)
     var numOtherPOI = 150 + getRand(0, 10)
-    var numPointsToGenerate = this.countries.length + numCities + numOtherPOI + 50
+    var numPointsToGenerate = this.countries.length + numCities + numOtherPOI
 
-    var initialPoints = this._generateUniquePoints(numPointsToGenerate, gridSize, margin,  this.regionWidth, this.regionHeight)
+    this.allPoints = this._generateUniquePoints(numPointsToGenerate, gridSize, margin,  this.regionWidth, this.regionHeight)
     
     var allDelaunyPoints = []
-    for (let i=0; i<initialPoints.length; i++) {
-      let pos = initialPoints[i]
+    for (let i=0; i<this.allPoints.length; i++) {
+      let pos = this.allPoints[i]
       allDelaunyPoints.push([pos.x, pos.y])
     }
     let allDelauny = document.Delaunay.from(allDelaunyPoints)
     this.allVoronoi = allDelauny.voronoi([0,0, this.regionWidth, this.regionHeight])
 
     //zzz TODO: remove edge cells (set them as water or wilderness or something)
-    var points = initialPoints.slice()
+    var points = []
+    for (let i=0; i<this.allPoints.length; i++) {
+      points.push({ pos:this.allPoints[i], index: i})
+    }
     this.edgeCellIndicies = []
 
     // Remove edge cells from points array
-    for (let i= initialPoints.length - 1; i >= 0; i-- ) {
+    for (let i=  0; i < this.allPoints.length; i++ ) {
       let polygon = this.allVoronoi.cellPolygon(i)
-      for (let v=0; v< polygon.length; v++) {
+
+      let isEdge = false
+      for (let v=0; v< polygon.length && !isEdge; v++) {
         var posArr = polygon[v]
         if (posArr[0] == 0 || posArr[0] >= this.regionWidth || posArr[1] == 0 || posArr[1] >= this.regionHeight) {
-          // edge cell detected
-          points.splice(i, 1)
-          this.edgeCellIndicies.push(i)
+          // edge cell detected, remove from points array
+          isEdge = true
         }
       }
+
+      if (isEdge) {
+        this.edgeCellIndicies.push(i)
+      }
+    }
+
+    for (var i = this.edgeCellIndicies.length -1; i >= 0; i--) {
+      let cellIndexToRemove = this.edgeCellIndicies[i]
+      points.splice(cellIndexToRemove, 1)
     }
 
     // 1) Choose capital positions:
     // first is random
     var capitalPositions = []
-    var capitalCellIndicies = []
-
     var pIdx = getRand(0, points.length -1)
     capitalPositions.push(points.splice(pIdx, 1)[0])
-    capitalCellIndicies.push(pIdx)
     for (let i=1; i< this.countries.length; i++) {
       pIdx = this._getPointFurthest(capitalPositions, points)
       capitalPositions.push(points.splice(pIdx, 1)[0])
-      capitalCellIndicies.push(pIdx)
     }
     
     // Set positions on the capitals now 
     var delaunyPoints = []
     for (let i=0; i< capitalPositions.length; i++) {
-      let pos = capitalPositions[i]
+      let cellIndex = capitalPositions[i].index
+      let pos = capitalPositions[i].pos
+      let factionIndex = this.countries[i].factionIndex
+
       this.countries[i].capital.pos.setVec( pos )
-      this.countries[i].capital.cellIndex = capitalCellIndicies[i]
+      this.countries[i].capital.cellIndex = cellIndex
       delaunyPoints.push([ pos.x, pos.y ])
 
-      let cellIndex = i
-      let factionIndex = this.countries[i].factionIndex
+      console.log("add faction map of Capital cell " + cellIndex)
       this.vornoiCellToFactionMap[cellIndex] = factionIndex
+      this.allPOIs.push(this.countries[i].capital)
+
     }
     
     // Generate the country voronoi graph so we can determine which country each city will end up inside of
@@ -111,23 +124,28 @@ class TerrainGenerator {
     this.countryVoronoi = delauny.voronoi([0,0, this.regionWidth, this.regionHeight])
 
     // Choose allegience of city POIs based on inclusion in country's voronoi cell
-    for (let i=0; i< initialPoints.length; i++) {
-      var pos = initialPoints[i]
-      let cellIndex = i
+    for (let i=0; i<points.length; i++) {
+      var pos = points[i].pos
+      let cellIndex = points[i].index
+      let foundCountry = false
       for (let c=0; c< this.countries.length; c++) {
-        if (this.countryVoronoi.contains(c, pos.x, pos.y) && !this.edgeCellIndicies.includes(i)) {
-          
-          if (!this.countries[c].capital.pos.equalsVec(pos)) {
-            let poi = this.countries[c].addRandomPOI(this.nameGenerator, pos, cellIndex)
-            // let city = this.countries[c].addCity(this.nameGenerator, pos)
-            this.allPOIs.push(poi)
-          }
+        if (this.countryVoronoi.contains(c, pos.x, pos.y)) {
 
+          let poi = this.countries[c].addRandomPOI(this.nameGenerator, pos, cellIndex)
+          // let city = this.countries[c].addCity(this.nameGenerator, pos)
+          this.allPOIs.push(poi)
+        
+
+          console.log("add faction map of POI cell " + cellIndex)
           let factionIndex = this.countries[c].factionIndex
           this.vornoiCellToFactionMap[cellIndex] = factionIndex
-
+          foundCountry = true
           continue
         }
+      }
+
+      if (!foundCountry) {
+        print("didnt find country for cell " + cellIndex)
       }
     }
   }
@@ -147,10 +165,13 @@ class TerrainGenerator {
     return bestIndex
   }
 
-  // fromPoints: [Vec2D]  - points to be the furthest from
-  // selectFrom: [Vec2D]  - set of points to chose furthest point in
+  // fromPoints: [posObj]  - points to be the furthest from
+  // selectFrom: [posObj]  - set of points to chose furthest point in
   // returns index of 'selectFrom'
   _getPointFurthest(fromPoints, selectFrom) {
+    if (selectFrom.length == 0) {
+      return
+    }
     var bestIndex = 0
     var bestDist = this._getAvgDistSQFrom(fromPoints, selectFrom[bestIndex])
     for (var i=1; i< selectFrom.length; i++) {
@@ -164,13 +185,13 @@ class TerrainGenerator {
     return bestIndex
   }
 
-  // fromPoints: [Vec2D]  - points to calculate average distance from
-  // toPoint: Vec2D   - single point to calculate distance to
+  // fromPoints: [posObj]  - points to calculate average distance from
+  // toPoint: posObj   - single point to calculate distance to
   // returns avg squared-distance
   _getAvgDistSQFrom(fromPoints, toPoint) {
     var distSQ = 0
     for (var i=0; i< fromPoints.length; i++) {
-      distSQ += toPoint.getDistSqFromVec(fromPoints[i])
+      distSQ += toPoint.pos.getDistSqFromVec(fromPoints[i].pos)
     }
     return distSQ / fromPoints.length
   }
@@ -180,8 +201,6 @@ class TerrainGenerator {
   //  and no two points exist at the same position
   // NOTE: this can result in an infinite loop if number of normalized grid points is less than numPoints
   _generateUniquePoints(numPoints, snapGridSize, margin, maxWidth, maxHeight) {
-    //zzz wip
-
     var uniqueMap = {}
     let points = []
 
@@ -214,15 +233,11 @@ class TerrainGenerator {
     node.size.setVal(this.regionWidth, this.regionHeight);
     node.addCustomDraw((g, x,y, ct) => {
 
-
       if(g.drawCentered) {
         //zzz wip - offset
         g.translate(-node.size.x/2, -node.size.y/2)
       }
 
-      //g.ctx.beginPath()
-      //this.delauny.render(g.ctx)
-      //g.ctx.stroke()
       for (const cellIndexStr in this.vornoiCellToFactionMap) {
         let cellIndex = parseInt(cellIndexStr)
         let factionIndex = this.vornoiCellToFactionMap[cellIndex]
@@ -251,23 +266,48 @@ class TerrainGenerator {
       g.ctx.stroke()*/
 
       for (let poi of this.allPOIs) {
-        if (poi.type == "Wilds") {
-          continue
+        if (poi.type != "Wilds") {
+          let fillStyle = "rgb(150, 150, 150)" //this.factionColors[poi.factionIndex]
+          let strokeStyle = "rgb(0, 0, 0)"
+          let strokeWidth = 2
+          let radius = 3
+          if (poi.type == "City") {
+            radius = 5
+            fillStyle = "rgb(0, 0, 0)"
+          } else if (poi.type == "Capital") {
+            radius = 10
+            fillStyle = "rgb(255, 255, 255)"
+          }
+          g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
         }
 
-        let fillStyle = "rgb(150, 150, 150)" //this.factionColors[poi.factionIndex]
+        g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 12pt", "rgb(255, 255, 255)")
+        g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 8pt", "rgb(0, 0, 0)")
+      }
+
+      for (let edge of this.edgeCellIndicies) {
+
+        g.ctx.strokeStyle = "rgb(0,0,0)"
+        g.ctx.lineWidth = 3
+        let fillStyle = "rgb(0, 0, 250)" //this.factionColors[poi.factionIndex]
+        g.ctx.fillStyle = fillStyle
+        g.ctx.beginPath()
+        this.allVoronoi.renderCell(edge, g.ctx)
+        g.ctx.fill()
+/*
+        let pos = this.allPoints[edge]
+        let fillStyle = "rgb(0, 0, 250)" //this.factionColors[poi.factionIndex]
         let strokeStyle = "rgb(0, 0, 0)"
         let strokeWidth = 2
-        let radius = 3
-        if (poi.type == "City") {
-          radius = 5
-          fillStyle = "rgb(0, 0, 0)"
-        } else if (poi.type == "Capital") {
-          radius = 10
-          fillStyle = "rgb(255, 255, 255)"
-        }
-        g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
+        let radius = 10
+        g.drawCircleEx(pos.x, pos.y, radius, fillStyle, strokeStyle, strokeWidth)
+        */
       }
+
+      g.ctx.strokeStyle = "rgb(0,255,0)"
+      g.ctx.beginPath()
+      this.countryVoronoi.render(g.ctx)
+      g.ctx.stroke()
     })
 
     node.setClick((e)=> {
