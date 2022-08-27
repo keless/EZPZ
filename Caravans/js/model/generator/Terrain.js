@@ -232,11 +232,15 @@ class TerrainGenerator {
     node.size.setVal(this.regionWidth, this.regionHeight);
     node.addCustomDraw((g, x,y, ct) => {
 
+      // just fill water as background, instead of drawing edge cells
+      g.drawRectEx(0, 0, this.regionWidth, this.regionHeight, "rgb(0, 0, 250)")
+
       if(g.drawCentered) {
         g.translate(-node.size.x/2, -node.size.y/2)
       }
 
       // draw "water" edge cells first
+      /*
       for (let edge of this.edgeCellIndicies) {
         g.ctx.strokeStyle = "rgb(0,0,250)"
         g.ctx.lineWidth = 3
@@ -246,7 +250,8 @@ class TerrainGenerator {
         this.allVoronoi.renderCell(edge, g.ctx)
         g.ctx.fill()
         g.ctx.stroke()
-      }
+      }*/
+
 
       /* black line strokes for ALL cells (including edges)
       g.ctx.strokeStyle = "rgb(0,0,0)"
@@ -293,10 +298,10 @@ class TerrainGenerator {
         }
 
         // draw cell index
-        /*
+        //*
         g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 12pt", "rgb(255, 255, 255)")
         g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 8pt", "rgb(0, 0, 0)")
-        */
+        //*/
       }
 
       // Show country voronoi lines
@@ -308,10 +313,14 @@ class TerrainGenerator {
       */
     })
 
-    node.setClick((e)=> {
+    node.setClick((e, x, y)=> {
+      x += node.size.x/2
+      y += node.size.y/2
       for (let i=0; i<this.allPOIs.length; i++) {
-        if (this.allVoronoi.contains(i, e.x, e.y)) {
-          console.log("clicked cell " + i + " at " + e.x +", "+e.y +" which has points " + this.allVoronoi.cellPolygon(i))
+        //zzz todo: figure out bug with offsets?
+
+        if (this.allVoronoi.contains(i, x, y)) {
+          console.log("clicked cell " + i + " at " + x +", "+ y +" which has points " + this.allVoronoi.cellPolygon(i))
 
           if (e.button == 0) {
             // left click
