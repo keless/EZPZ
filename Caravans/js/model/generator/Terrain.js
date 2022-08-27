@@ -14,6 +14,7 @@ class TerrainGenerator {
     this.nameGenerator = new NameGenerator()
 
     this.allPOIs = []
+    this.allPoints = []
 
     // Must correspond to numFactions count
     this.factionColors = ["rgb(255, 0, 0)", "rgb(150, 50, 205)", "rgb(60, 179, 113)", "rgb(255, 165, 0)", "rgb(238, 130, 238)"]
@@ -35,18 +36,17 @@ class TerrainGenerator {
     this.countryVoronoi = null
     this.allVoronoi = null
     this.vornoiCellToFactionMap = {}
+
+    // array of arrays where inner-array is a sorted array of two Ints representing cell indexes that have a road between them
+    // eg: [ [1,4], [4, 120], [15, 120] ]  represents 3 connected road segments from 1<->4<->120<->15
+    this.roads = []
   }
 
   generate() {
-    console.log("todo: generate positions")
-
     var gridSize = 31
 
     // 0) Generate points on a regular offset of `{gridSize, gridSize}` with a margin from the edges of `gridSize+1`
-    //zzz todo: generate UNIQUE points
     var margin = gridSize + 1
-    //var points = []
-
     var numCountries = this.countries.length
     var numCities = getRand(2*numCountries, 5*numCountries)
     var numOtherPOI = 150 + getRand(0, 10)
@@ -62,7 +62,7 @@ class TerrainGenerator {
     let allDelauny = document.Delaunay.from(allDelaunyPoints)
     this.allVoronoi = allDelauny.voronoi([0,0, this.regionWidth, this.regionHeight])
 
-    //zzz TODO: remove edge cells (set them as water or wilderness or something)
+    // 'points' is a subset of allPoints which we can begin to assign cities and other interesting things to
     var points = []
     for (let i=0; i<this.allPoints.length; i++) {
       points.push({ pos:this.allPoints[i], index: i})
@@ -101,7 +101,7 @@ class TerrainGenerator {
       pIdx = this._getPointFurthest(capitalPositions, points)
       capitalPositions.push(points.splice(pIdx, 1)[0])
     }
-    
+
     // Set positions on the capitals now 
     var delaunyPoints = []
     for (let i=0; i< capitalPositions.length; i++) {
@@ -113,7 +113,7 @@ class TerrainGenerator {
       this.countries[i].capital.cellIndex = cellIndex
       delaunyPoints.push([ pos.x, pos.y ])
 
-      console.log("add faction map of Capital cell " + cellIndex)
+      //console.log("add faction map of Capital cell " + cellIndex)
       this.vornoiCellToFactionMap[cellIndex] = factionIndex
       this.allPOIs.push(this.countries[i].capital)
 
@@ -123,6 +123,8 @@ class TerrainGenerator {
     let delauny = document.Delaunay.from(delaunyPoints)
     this.countryVoronoi = delauny.voronoi([0,0, this.regionWidth, this.regionHeight])
 
+    var nonCapitalRoadNodes = []
+
     // Choose allegience of city POIs based on inclusion in country's voronoi cell
     for (let i=0; i<points.length; i++) {
       var pos = points[i].pos
@@ -130,13 +132,14 @@ class TerrainGenerator {
       let foundCountry = false
       for (let c=0; c< this.countries.length; c++) {
         if (this.countryVoronoi.contains(c, pos.x, pos.y)) {
-
           let poi = this.countries[c].addRandomPOI(this.nameGenerator, pos, cellIndex)
-          // let city = this.countries[c].addCity(this.nameGenerator, pos)
           this.allPOIs.push(poi)
         
+          if (poi.type == "City") {
+            nonCapitalRoadNodes.push(poi)
+          }
 
-          console.log("add faction map of POI cell " + cellIndex)
+          //console.log("add faction map of POI cell " + cellIndex)
           let factionIndex = this.countries[c].factionIndex
           this.vornoiCellToFactionMap[cellIndex] = factionIndex
           foundCountry = true
@@ -145,17 +148,125 @@ class TerrainGenerator {
       }
 
       if (!foundCountry) {
-        print("didnt find country for cell " + cellIndex)
+        console.error("didnt find country for cell " + cellIndex)
       }
+    }
+
+    var allRoadPoints = this.allPOIs.filter( (poi) => {
+      return poi.type == "Capital" || poi.type == "City"
+    } )
+    var seedPoints = []
+    for (let c=0; c<this.countries.length; c++) {
+      seedPoints.push(this.countries[c].capital)
+    }
+    //this._generateRoads(allRoadPoints)
+    var roadGenerator = new RoadGenerator(allRoadPoints, seedPoints)
+    this.roads = roadGenerator.roads
+  }
+
+  // populate this.roads using short branching vine heuristic
+  _generateRoads(allRoadPoints) {
+    // Set this to true if we want to force every city to have a road built to it
+    // If false, the roads will grow from the capital and stop once it meets another road
+    //  potentially leaving MANY cities with no roads
+    let config_findALLPoints = true
+
+    class Vine {
+      constructor( seedPOI, potentialPoints ) {
+        this.isGrowing = true
+        this.seed = seedPOI
+        this.lastBud = seedPOI
+        this.livingNodes = [seedPOI]
+
+        // nodes the vine can grow into (remove seed since we've already started there)
+        this.potentialNodes = potentialPoints.filter((e)=> { 
+          return e != seedPOI })
+      }
+    }
+
+    let vines = []
+    // use each capital as a starting seed
+    for (let i=0; i< this.countries.length; i++) {
+      vines.push(new Vine(this.countries[i].capital, allRoadPoints))
+    }
+
+    let numGrowing = vines.length
+    while (numGrowing > 0) {
+      numGrowing = 0
+      for (let v=0; v< vines.length; v++) {
+        let vine = vines[v]
+        if (!vine.isGrowing) {
+          continue
+        } else {
+          numGrowing += 1
+        }
+
+        // 0) if we have exhausted potential nodes, we are done
+        if (vine.potentialNodes.length == 0) {
+          // do this first in case config_findALLPoints is true and we looped without setting isGrowing = false
+          vine.isGrowing = false
+          continue
+        }
+
+        // 1) find closest city to vine.lastBud
+        let i = this._getPointClosest(vine.potentialNodes, vine.lastBud)
+        let growTarget = vine.potentialNodes.splice(i, 1)[0]
+        // 2) find closest existing node to new node
+        let f = this._getPointClosest(vine.livingNodes, growTarget)
+        let fromTarget = vine.livingNodes[f]
+
+        if (fromTarget == growTarget) {
+          if (!config_findALLPoints) {
+            vine.isGrowing = false
+          }
+          
+          continue
+        }
+
+        // 2) if road doesnt already exist, create it
+        let road = this._createRoad(fromTarget, growTarget)
+        if (this.roads.includes(road)) {
+          vine.isGrowing = false
+          continue
+        } 
+
+        // and add it to the vine
+        this.roads.push(road)
+        vine.lastBud = growTarget
+        vine.livingNodes.push(growTarget)
+        
+      }
+    }
+
+
+
+
+  }
+
+  //zzz todo: remove this if RoadsGenerator is the only thing that calls it
+  // cellOne: POI
+  // cellTwo: POI
+  // returns [ Int, Int ], where the ints are sorted
+  _createRoad(cellOne, cellTwo) {
+    if (cellOne.cellIndex == cellTwo.cellIndex) {
+      console.error("cannot create a road between the same cellindex and itself " + cellOne.cellIndex)
+    }
+    if (cellOne.cellIndex < cellTwo.cellIndex) {
+      return [cellOne, cellTwo]
+    } else {
+      return [cellTwo, cellOne]
     }
   }
 
+//zzz todo: remove this if RoadsGenerator is the only thing that calls it
+  // fromPoints: [posObj]
+  // toPoint: [posObj]
   // returns index of 'fromPoints' closest to 'toPoint'
   _getPointClosest(fromPoints, toPoint) {
     var bestIndex = 0
-    var bestDist = toPoint.getDistSqFromVec(fromPoints[bestIndex])
+    var bestDist = toPoint.pos.getDistSqFromVec(fromPoints[bestIndex].pos)
     for (var i=1; i< fromPoints.length; i++) {
-      var dist =  toPoint.getDistSqFromVec(fromPoints[i])
+      var dist =  toPoint.pos.getDistSqFromVec(fromPoints[i].pos)
       if (dist < bestDist) {
         bestIndex = i
         bestDist = dist
@@ -234,39 +345,45 @@ class TerrainGenerator {
     node.addCustomDraw((g, x,y, ct) => {
 
       if(g.drawCentered) {
-        //zzz wip - offset
         g.translate(-node.size.x/2, -node.size.y/2)
       }
 
-      for (const cellIndexStr in this.vornoiCellToFactionMap) {
-        let cellIndex = parseInt(cellIndexStr)
-        let factionIndex = this.vornoiCellToFactionMap[cellIndex]
-        g.ctx.strokeStyle = "rgb(0,0,0)"
+      // draw "water" edge cells first
+      for (let edge of this.edgeCellIndicies) {
+        g.ctx.strokeStyle = "rgb(0,0,250)"
         g.ctx.lineWidth = 3
-        let fillStyle = this.factionColors[factionIndex]
+        let fillStyle = "rgb(0, 0, 250)"
         g.ctx.fillStyle = fillStyle
         g.ctx.beginPath()
-        this.allVoronoi.renderCell(cellIndex, g.ctx)
+        this.allVoronoi.renderCell(edge, g.ctx)
         g.ctx.fill()
-        //g.ctx.stroke()
+        g.ctx.stroke()
       }
 
+      /* black line strokes for ALL cells (including edges)
       g.ctx.strokeStyle = "rgb(0,0,0)"
       g.ctx.lineWidth = 3
       g.ctx.beginPath()
       this.allVoronoi.render(g.ctx)
       g.ctx.stroke()
-
-
-      /*
-      g.ctx.strokeStyle = "rgb(50,150,50)"
-      g.ctx.lineWidth = 3
-      g.ctx.beginPath()
-      this.countryVoronoi.render(g.ctx)
-      g.ctx.stroke()*/
+      */
 
       for (let poi of this.allPOIs) {
+        // stroke and fill faction color
+        let cellIndex = poi.cellIndex
+        let factionIndex = this.vornoiCellToFactionMap[cellIndex]
+        g.ctx.strokeStyle = "rgb(0,0,0)"
+        g.ctx.lineWidth = 2
+        let fillStyle = this.factionColors[factionIndex]
+        g.ctx.fillStyle = fillStyle
+        g.ctx.beginPath()
+        this.allVoronoi.renderCell(cellIndex, g.ctx)
+        g.ctx.fill()
+        g.ctx.stroke()
+
+        // draw circle if capital or city
         if (poi.type != "Wilds") {
+          // default (village)
           let fillStyle = "rgb(150, 150, 150)" //this.factionColors[poi.factionIndex]
           let strokeStyle = "rgb(0, 0, 0)"
           let strokeWidth = 2
@@ -281,37 +398,29 @@ class TerrainGenerator {
           g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
         }
 
+        for (let road of this.roads) {
+          let startPos = road[0].pos
+          let endPos = road[1].pos
+          g.drawLineEx(startPos.x, startPos.y, endPos.x, endPos.y, "rgb(133,42,42)", 4)
+        }
+
+        // draw cell index
+        /*
         g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 12pt", "rgb(255, 255, 255)")
         g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 8pt", "rgb(0, 0, 0)")
-      }
-
-      for (let edge of this.edgeCellIndicies) {
-
-        g.ctx.strokeStyle = "rgb(0,0,0)"
-        g.ctx.lineWidth = 3
-        let fillStyle = "rgb(0, 0, 250)" //this.factionColors[poi.factionIndex]
-        g.ctx.fillStyle = fillStyle
-        g.ctx.beginPath()
-        this.allVoronoi.renderCell(edge, g.ctx)
-        g.ctx.fill()
-/*
-        let pos = this.allPoints[edge]
-        let fillStyle = "rgb(0, 0, 250)" //this.factionColors[poi.factionIndex]
-        let strokeStyle = "rgb(0, 0, 0)"
-        let strokeWidth = 2
-        let radius = 10
-        g.drawCircleEx(pos.x, pos.y, radius, fillStyle, strokeStyle, strokeWidth)
         */
       }
 
+      // Show country voronoi lines
+      /*
       g.ctx.strokeStyle = "rgb(0,255,0)"
       g.ctx.beginPath()
       this.countryVoronoi.render(g.ctx)
       g.ctx.stroke()
+      */
     })
 
     node.setClick((e)=> {
-
       for (let i=0; i<this.allPOIs.length; i++) {
         if (this.allVoronoi.contains(i, e.x, e.y)) {
           console.log("clicked cell " + i + " at " + e.x +", "+e.y +" which has points " + this.allVoronoi.cellPolygon(i))
@@ -326,10 +435,6 @@ class TerrainGenerator {
           return
         }
       }
-
-
-
-      
     })
 
     return node
@@ -393,6 +498,123 @@ class Country {
       default:
         return this.addWilderness(pos, cellIndex)
     }
+  }
+}
+
+class RoadGenerator { 
+  constructor(allRoadPoints, seedPoints) {
+    // roads: [ [poi, poi], ..., n ]
+    this.roads = []
+
+    // Set this to true if we want to force every city to have a road built to it
+    // If false, the roads will grow from the capital and stop once it meets another road
+    //  potentially leaving MANY cities with no roads
+    this.config_findALLPoints = true
+
+    this._generate(allRoadPoints, seedPoints)
+  }
+
+  // allRoadPoints: [POI] a list of all points that roads will consider start/end points
+  // seedPoints: [POI] a list of points from which to start the roads (it is okay for these points to exist within allRoadPoints)
+  // the result of calling this method will be to populate this.roads
+  _generate(allRoadPoints, seedPoints) {
+    class Vine {
+      constructor( seedPOI, potentialPoints ) {
+        this.isGrowing = true
+        this.seed = seedPOI
+        this.lastBud = seedPOI
+        this.livingNodes = [seedPOI]
+
+        // nodes the vine can grow into (remove seed since we've already started there)
+        this.potentialNodes = potentialPoints.filter((e)=> { 
+          return e != seedPOI })
+      }
+    }
+
+    let vines = []
+    // use each capital as a starting seed
+    for (let i=0; i< seedPoints.length; i++) {
+      vines.push(new Vine(seedPoints[i], allRoadPoints))
+    }
+
+    let numGrowing = vines.length
+    while (numGrowing > 0) {
+      numGrowing = 0
+      for (let v=0; v< vines.length; v++) {
+        let vine = vines[v]
+        if (!vine.isGrowing) {
+          continue
+        } else {
+          numGrowing += 1
+        }
+
+        // 0) if we have exhausted potential nodes, we are done
+        if (vine.potentialNodes.length == 0) {
+          // do this first in case config_findALLPoints is true and we looped without setting isGrowing = false
+          vine.isGrowing = false
+          continue
+        }
+
+        // 1) find closest city to vine.lastBud
+        let i = this._getPointClosest(vine.potentialNodes, vine.lastBud)
+        let growTarget = vine.potentialNodes.splice(i, 1)[0]
+        // 2) find closest existing node to new node
+        let f = this._getPointClosest(vine.livingNodes, growTarget)
+        let fromTarget = vine.livingNodes[f]
+
+        if (fromTarget == growTarget) {
+          if (!this.config_findALLPoints) {
+            vine.isGrowing = false
+          }
+          
+          continue
+        }
+
+        // 2) if road doesnt already exist, create it
+        let road = this._createRoad(fromTarget, growTarget)
+        if (this.roads.includes(road)) {
+          vine.isGrowing = false
+          continue
+        } 
+
+        // and add it to the vine
+        this.roads.push(road)
+        vine.lastBud = growTarget
+        vine.livingNodes.push(growTarget)
+        
+      }
+    }
+  }
+
+  // cellOne: POI
+  // cellTwo: POI
+  // returns [ Int, Int ], where the ints are sorted
+  _createRoad(cellOne, cellTwo) {
+    if (cellOne.cellIndex == cellTwo.cellIndex) {
+      console.error("cannot create a road between the same cellindex and itself " + cellOne.cellIndex)
+    }
+    if (cellOne.cellIndex < cellTwo.cellIndex) {
+      return [cellOne, cellTwo]
+    } else {
+      return [cellTwo, cellOne]
+    }
+  }
+
+  // fromPoints: [posObj]
+  // toPoint: [posObj]
+  // returns index of 'fromPoints' closest to 'toPoint'
+  _getPointClosest(fromPoints, toPoint) {
+    var bestIndex = 0
+    var bestDist = toPoint.pos.getDistSqFromVec(fromPoints[bestIndex].pos)
+    for (var i=1; i< fromPoints.length; i++) {
+      var dist =  toPoint.pos.getDistSqFromVec(fromPoints[i].pos)
+      if (dist < bestDist) {
+        bestIndex = i
+        bestDist = dist
+      }
+    }
+
+    return bestIndex
   }
 }
 
