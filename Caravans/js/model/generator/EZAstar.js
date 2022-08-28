@@ -57,15 +57,15 @@ class EZAstar {
     // For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
     // how cheap a path could be from start to finish if it goes through n.
     let fScore = {} // dict<AstarGraphNode:Number>
-    fScore[start] = h(start)
+    fScore[start] = start.EZAstar_estimatedCostTo(goal)
 
     while(openSet.size != 0) {
       // This operation can occur in O(Log(N)) time if openSet is a min-heap or a priority queue
       // current is the node in openSet having the lowest fScore[] value
-      let current = this.getKeyWithLowestValue(fscore, openSet)
+      let current = EZAstar.getKeyWithLowestValue(fScore, openSet)
       if (current == goal) {
         // reached the end, return result
-        return this.reconstruct_path(cameFrom, current)
+        return EZAstar.reconstruct_path(cameFrom, current)
       }
 
       // remove current node from openSet
@@ -73,7 +73,7 @@ class EZAstar {
       for (let neighbor of current.EZAstar_neighbors()) {
         // d(current,neighbor) is the weight of the edge from current to neighbor
         // tentative_gScore is the distance from start to the neighbor through current
-        let tentative_gScore = getDictValueOrInfinity(gScore, current) + current.EZAstar_estimatedCostTo(neighbor)
+        let tentative_gScore = EZAstar.getDictValueOrInfinity(gScore, current) + current.EZAstar_estimatedCostTo(neighbor)
         if (tentative_gScore < gScore[neighbor]) {
           // This path to neighbor is better than any previous one. Record it!
           cameFrom[neighbor] = current
@@ -93,11 +93,11 @@ class EZAstar {
   // cameFrom: dict<AstarGraphNode:Number>  - map of nodes that came from other nodes during search
   // current: AstarGraphNode - current node
   // returns [AstarGraphNode] - an array of graph nodes representing the found path from start to end
-  reconstruct_path(cameFrom, current) {
+  static reconstruct_path(cameFrom, current) {
     let total_path = [current]
     for (let current of Object.keys(cameFrom)) {
       current = cameFrom[current]
-      this.prepend(current, total_path)
+      EZAstar.prepend(current, total_path)
     }
     return total_path
   }
@@ -106,14 +106,14 @@ class EZAstar {
   // value: element type
   // array: [element] array
   // returns [element] - a new array with the value inserted at the front
-  prepend(value, array) {
+  static prepend(value, array) {
     var newArray = array.slice();
     newArray.unshift(value);
     return newArray;
   }
 
   // returns ValueType or Infinity
-  getDictValueOrInfinity(dict, key) {
+  static getDictValueOrInfinity(dict, key) {
     if (dict.hasOwnProperty(key)) {
       return dict[key]
     }
@@ -123,7 +123,7 @@ class EZAstar {
   // dict: dict<KeyType:ValueType> - a dictionary with comparable values
   // keySet: Set<KeyType> - a set of keys (will safely ignore keys that dont exist in dict)
   // returns KeyType - returns the key with the lowest associated value
-  getKeyWithLowestValue(dict, keySet) {
+  static getKeyWithLowestValue(dict, keySet) {
     let minKey = keySet.values().next().value // grab the first value in the set
     let minValue = Infinity 
     if (dict.hasOwnProperty(minKey)) {

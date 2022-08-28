@@ -29,17 +29,19 @@ class TerrainGenerator {
     for (let i=0; i < this.numFactions; i++) {
       let country = new Country(this.nameGenerator, i)
       this.countries.push(country)
-
-      this.allPOIs.push(country.capital)
     }
 
     this.countryVoronoi = null
     this.allVoronoi = null
     this.vornoiCellToFactionMap = {}
+    this.voronoiCellToPOIMap = {}
 
     // array of arrays where inner-array is a sorted array of two Ints representing cell indexes that have a road between them
     // eg: [ [1,4], [4, 120], [15, 120] ]  represents 3 connected road segments from 1<->4<->120<->15
     this.roads = []
+
+    this.searchPathStart = null
+    this.searchPath = []
   }
 
   generate() {
@@ -115,29 +117,25 @@ class TerrainGenerator {
 
       //console.log("add faction map of Capital cell " + cellIndex)
       this.vornoiCellToFactionMap[cellIndex] = factionIndex
+      this.voronoiCellToPOIMap[cellIndex] = this.countries[i].capital
       this.allPOIs.push(this.countries[i].capital)
-
     }
     
     // Generate the country voronoi graph so we can determine which country each city will end up inside of
     let delauny = document.Delaunay.from(delaunyPoints)
     this.countryVoronoi = delauny.voronoi([0,0, this.regionWidth, this.regionHeight])
 
-    var nonCapitalRoadNodes = []
-
     // Choose allegience of city POIs based on inclusion in country's voronoi cell
     for (let i=0; i<points.length; i++) {
-      var pos = points[i].pos
+      let pos = points[i].pos
       let cellIndex = points[i].index
       let foundCountry = false
       for (let c=0; c< this.countries.length; c++) {
         if (this.countryVoronoi.contains(c, pos.x, pos.y)) {
           let poi = this.countries[c].addRandomPOI(this.nameGenerator, pos, cellIndex)
+
           this.allPOIs.push(poi)
-        
-          if (poi.type == "City") {
-            nonCapitalRoadNodes.push(poi)
-          }
+          this.voronoiCellToPOIMap[cellIndex] = poi
 
           //console.log("add faction map of POI cell " + cellIndex)
           let factionIndex = this.countries[c].factionIndex
@@ -152,15 +150,31 @@ class TerrainGenerator {
       }
     }
 
-    var allRoadPoints = this.allPOIs.filter( (poi) => {
+    // Fill in neighbors for all POIs, for use in EZAstar
+    for(let poi of this.allPOIs) {
+      let voronoiNeighbors = this.allVoronoi.neighbors(poi.cellIndex)
+      for(let vNeighbor of voronoiNeighbors) {
+        if (this.voronoiCellToPOIMap.hasOwnProperty(vNeighbor)) {
+          let neighborPOI = this.voronoiCellToPOIMap[vNeighbor]
+          poi.neighbors.push(neighborPOI)
+        }
+      }
+
+      if (poi.type == "Capital") {
+        console.log(poi.neighbors)
+        console.log("for capital at " + poi.cellIndex)
+      }
+    }
+
+    let allRoadPoints = this.allPOIs.filter( (poi) => {
       return poi.type == "Capital" || poi.type == "City"
     } )
-    var seedPoints = []
+    let seedPoints = []
     for (let c=0; c<this.countries.length; c++) {
       seedPoints.push(this.countries[c].capital)
     }
     //this._generateRoads(allRoadPoints)
-    var roadGenerator = new RoadGenerator(allRoadPoints, seedPoints)
+    let roadGenerator = new RoadGenerator(allRoadPoints, seedPoints)
     this.roads = roadGenerator.roads
   }
 
@@ -325,17 +339,29 @@ class TerrainGenerator {
       x += node.size.x/2
       y += node.size.y/2
       for (let i=0; i<this.allPOIs.length; i++) {
-        //zzz todo: figure out bug with offsets?
+        let cellIndex = i
 
-        if (this.allVoronoi.contains(i, x, y)) {
-          console.log("clicked cell " + i + " at " + x +", "+ y +" which has points " + this.allVoronoi.cellPolygon(i))
+        if (this.allVoronoi.contains(cellIndex, x, y)) {
+          console.log("clicked cell " + cellIndex + " at " + x +","+ y +" has neighbors " + this.voronoiCellToPOIMap[cellIndex].neighbors.map((e)=>{ return e.cellIndex }))
 
           if (e.button == 0) {
+            this.searchPathStart = this.voronoiCellToPOIMap[cellIndex]
+            console.log("start search from " + cellIndex)
+
             // left click
-            EventBus.ui.dispatch({evtName: "voronoi left clicked", cell: i})
+            //EventBus.ui.dispatch({evtName: "voronoi left clicked", cell: cellIndex})
           } else if (e.button == 2) {
+            if (this.searchPathStart != null && this.voronoiCellToPOIMap.hasOwnProperty(cellIndex)) {
+              console.log("search from " + this.searchPathStart.cellIndex + " to " + cellIndex)
+              let endPoint = this.voronoiCellToPOIMap[cellIndex]
+              let result = EZAstar.search(this.searchPathStart, endPoint)
+
+              console.log("got result " + result.length)
+              this.searchPathStart = null
+            }
+
             // right click
-            EventBus.ui.dispatch({evtName: "voronoi right clcked", cell: i})
+            //EventBus.ui.dispatch({evtName: "voronoi right clcked", cell: cellIndex})
           }
           return
         }
@@ -353,6 +379,19 @@ class POI {
     this.type = type
     this.factionIndex = factionIndex
     this.cellIndex = cellIndex
+
+    this.neighbors = []
+  }
+
+  // Implement EZAstarGraphNode protocol
+  EZAstar_neighbors() {
+    return this.neighbors
+  }
+
+  EZAstar_estimatedCostTo(node) {
+    let toPos = node.pos
+    // simple euclidian distance
+    return Math.sqrt( this.pos.getDistSqFromVec(toPos) )
   }
 }
 
