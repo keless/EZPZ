@@ -356,7 +356,11 @@ class TerrainGenerator {
               let endPoint = this.voronoiCellToPOIMap[cellIndex]
               let result = EZAstar.search(this.searchPathStart, endPoint)
 
-              console.log("got result " + result.length)
+              result = result.map((e)=>{ 
+                return e.cellIndex 
+              })
+
+              console.log("got result " + result.join(", "))
               this.searchPathStart = null
             }
 
