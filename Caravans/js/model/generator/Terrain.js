@@ -166,16 +166,34 @@ class TerrainGenerator {
       }
     }
 
-    let allRoadPoints = this.allPOIs.filter( (poi) => {
+    let allRoadPoints = this.allPOIs.filter((poi) => {
       return poi.type == "Capital" || poi.type == "City"
-    } )
+    })
     let seedPoints = []
     for (let c=0; c<this.countries.length; c++) {
       seedPoints.push(this.countries[c].capital)
     }
-    //this._generateRoads(allRoadPoints)
+
     let roadGenerator = new RoadGenerator(allRoadPoints, seedPoints)
-    this.roads = roadGenerator.roads
+
+    // roads "as the crow flies" need to be converted to segmented roads that path through individual voronoi cells
+    let crowRoads = roadGenerator.roads
+    for (let road of crowRoads) {
+      let startPOI = road[0]
+      let endPOI = road[1]
+      let result = EZAstar.search(startPOI, endPOI)
+      if (result.length > 0) {
+        for (let i=0; i< result.length -1; i++) {
+          let segment = this._createRoad(result[i], result[i+1])
+
+          // ensure uniqueness (so we dont have doubles of roads)
+          if(!this.roads.includes(segment)) {
+            this.roads.push(segment)
+          }
+        }
+      }
+    }
+
   }
 
   // fromPoints: [posObj]  - points to be the furthest from
@@ -238,14 +256,6 @@ class TerrainGenerator {
     var nx = Math.floor(rx / snapGridSize) * snapGridSize
     var ny = Math.floor(ry / snapGridSize) * snapGridSize
     return new Vec2D(nx, ny)
-  }
-
-  // Get the list of cells between the start cell and the end cell forming a path from start to end
-  // cellStartIndex: Int
-  // cellEndIndex: Int
-  // returns [Int]
-  getPathBetween(cellStartIndex, cellEndIndex) {
-    //zzz WIP
   }
 
   // Create a nodeView that renders the given generated terrain
@@ -314,6 +324,7 @@ class TerrainGenerator {
         }
 
         for (let road of this.roads) {
+          // TODO: roads need to cross cells at their actual touching boarder not just directly between centroids
           let startPos = road[0].pos
           let endPos = road[1].pos
           g.drawLineEx(startPos.x, startPos.y, endPos.x, endPos.y, "rgb(133,42,42)", 4)
@@ -345,7 +356,7 @@ class TerrainGenerator {
       x += node.size.x/2
       y += node.size.y/2
       for (let i=0; i<this.allPOIs.length; i++) {
-        let cellIndex = i
+        let cellIndex = this.allPOIs[i].cellIndex
 
         if (this.allVoronoi.contains(cellIndex, x, y)) {
           console.log("clicked cell " + cellIndex + " at " + x +","+ y +" has neighbors " + this.voronoiCellToPOIMap[cellIndex].neighbors.map((e)=>{ return e.cellIndex }))
