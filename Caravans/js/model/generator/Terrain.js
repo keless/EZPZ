@@ -319,6 +319,12 @@ class TerrainGenerator {
           g.drawLineEx(startPos.x, startPos.y, endPos.x, endPos.y, "rgb(133,42,42)", 4)
         }
 
+        for (let road of this.searchPath) {
+          let startPos = road[0].pos
+          let endPos = road[1].pos
+          g.drawLineEx(startPos.x, startPos.y, endPos.x, endPos.y, "rgb(255,242,242)", 4)
+        }
+
         // draw cell index
         //*
         g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 12pt", "rgb(255, 255, 255)")
@@ -356,11 +362,19 @@ class TerrainGenerator {
               let endPoint = this.voronoiCellToPOIMap[cellIndex]
               let result = EZAstar.search(this.searchPathStart, endPoint)
 
-              result = result.map((e)=>{ 
-                return e.cellIndex 
-              })
+              let resultCellIndexArr = result.map((e)=>{ return e.cellIndex })
 
-              console.log("got result " + result.join(", "))
+              if (result.length == 0) {
+                this.searchPath = []
+              } else {
+                for (let i=0; i< result.length -1; i++) {
+                  let segment = this._createRoad(result[i], result[i+1])
+                  this.searchPath.push(segment)
+                }
+              }
+
+
+              console.log("got result " + resultCellIndexArr.join(", "))
               this.searchPathStart = null
             }
 
@@ -373,6 +387,21 @@ class TerrainGenerator {
     })
 
     return node
+  }
+
+
+  // cellOne: POI
+  // cellTwo: POI
+  // returns [ Int, Int ], where the ints are sorted
+  _createRoad(cellOne, cellTwo) {
+    if (cellOne.cellIndex == cellTwo.cellIndex) {
+      console.error("cannot create a road between the same cellindex and itself " + cellOne.cellIndex)
+    }
+    if (cellOne.cellIndex < cellTwo.cellIndex) {
+      return [cellOne, cellTwo]
+    } else {
+      return [cellTwo, cellOne]
+    }
   }
 }
  

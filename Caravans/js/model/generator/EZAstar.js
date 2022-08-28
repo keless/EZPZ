@@ -59,18 +59,14 @@ class EZAstar {
     let fScore = new Map() // Map<AstarGraphNode:Number>
     fScore.set(start, start.EZAstar_estimatedCostTo(goal))
 
-    console.log("EZAstar search start with initial cost " + fScore.get(start))
-
     let debug_iterations = 0
     while(openSet.size != 0) {
       debug_iterations += 1
-      console.log(" starting iteration " + debug_iterations)
 
       // This operation can occur in O(Log(N)) time if openSet is a min-heap or a priority queue
       // current is the node in openSet having the lowest fScore[] value
       let current = EZAstar.getKeyWithLowestValue(fScore, openSet)
       if (current == goal) {
-        console.log(" reached goal")
         // reached the end, return result
         return EZAstar.reconstruct_path(cameFrom, current)
       }
@@ -81,7 +77,6 @@ class EZAstar {
         // d(current,neighbor) is the weight of the edge from current to neighbor
         // tentative_gScore is the distance from start to the neighbor through current
         let tentative_gScore = EZAstar.getMapValueOrInfinity(gScore, current) + current.EZAstar_estimatedCostTo(neighbor)
-        console.log(" test neighbor " + neighbor.cellIndex + " of current " + current.cellIndex + " : " + tentative_gScore + " < " + EZAstar.getMapValueOrInfinity(gScore, neighbor)) 
         if (tentative_gScore < EZAstar.getMapValueOrInfinity(gScore, neighbor)) {
           // This path to neighbor is better than any previous one. Record it!
           cameFrom.set(neighbor, current)
@@ -95,7 +90,6 @@ class EZAstar {
     }
 
     // Failed to find a path
-    console.log("zzz failed to find a path")
     return []
   }
 
@@ -104,7 +98,7 @@ class EZAstar {
   // returns [AstarGraphNode] - an array of graph nodes representing the found path from start to end
   static reconstruct_path(cameFrom, current) {
     let total_path = [current]
-    for (let current of cameFrom.keys()) {
+    while (cameFrom.has(current)) {
       current = cameFrom.get(current)
       total_path = EZAstar.prepend(current, total_path)
     }
@@ -124,7 +118,6 @@ class EZAstar {
   // returns ValueType or Infinity
   static getMapValueOrInfinity(map, key) {
     if (map.has(key)) {
-      console.log("getMapValueOrInfinity got " + map.get(key) + " for key.cellindex" + key.cellIndex)
       return map.get(key)
     }
     return Infinity
