@@ -226,6 +226,14 @@ class TerrainGenerator {
     return new Vec2D(nx, ny)
   }
 
+  // Get the list of cells between the start cell and the end cell forming a path from start to end
+  // cellStartIndex: Int
+  // cellEndIndex: Int
+  // returns [Int]
+  getPathBetween(cellStartIndex, cellEndIndex) {
+    //zzz WIP
+  }
+
   // Create a nodeView that renders the given generated terrain
   createNodeView() {
     var node = new NodeView()
@@ -337,7 +345,7 @@ class TerrainGenerator {
     return node
   }
 }
-
+ 
 class POI {
   constructor(name, pos, type, factionIndex, cellIndex) {
     this.name = name
