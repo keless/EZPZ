@@ -10,8 +10,8 @@ class GameStateView extends BaseStateView {
 
 		this.gridNodes = []
 		this.gridBase = new NodeView()
-		//zzz this.rootView.addChild(this.gridBase)
-		this._createGridNodes()
+		//this.rootView.addChild(this.gridBase)
+		//this._createGridNodes()
 
 		this.overLayer = new NodeView()
 		this.rootView.addChild(this.overLayer)

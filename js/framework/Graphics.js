@@ -179,7 +179,7 @@ class Graphics {
 		this.ctx.beginPath();
 		this.ctx.moveTo(verts[0].x, verts[0].y);
 		this.ctx.bezierCurveTo(verts[1].x, verts[1].y, verts[2].x, verts[2].y, verts[3].x, verts[3].y);
-		this.ctx.closePath();
+		//this.ctx.closePath();
 		if(fs) { this.ctx.fill(); }
 		if(ss) { this.ctx.stroke(); }
 	}

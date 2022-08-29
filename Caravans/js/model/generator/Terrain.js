@@ -111,7 +111,18 @@ class TerrainGenerator {
       let pos = capitalPositions[i].pos
       let factionIndex = this.countries[i].factionIndex
 
-      this.countries[i].capital.pos.setVec( pos )
+      /* clearly i dont understand what the voronoi circumcenters are..
+      let cIdx = i * 2
+      let circumCenterX = this.allVoronoi.circumcenters[cIdx]
+      let circumCenterY = this.allVoronoi.circumcenters[cIdx + 1]
+
+      if (circumCenterX != pos.x || circumCenterY != pos.y) {
+        console.log("moving capital " + cellIndex + " " + pos.x+","+pos.y +" => "+ circumCenterX +","+ circumCenterY ) 
+      }
+      this.countries[i].capital.pos.setVal(circumCenterX, circumCenterY)
+      */
+
+      this.countries[i].capital.pos.setVec(pos)
       this.countries[i].capital.cellIndex = cellIndex
       delaunyPoints.push([ pos.x, pos.y ])
 
@@ -156,14 +167,19 @@ class TerrainGenerator {
       for(let vNeighbor of voronoiNeighbors) {
         if (this.voronoiCellToPOIMap.hasOwnProperty(vNeighbor)) {
           let neighborPOI = this.voronoiCellToPOIMap[vNeighbor]
-          poi.neighbors.push(neighborPOI)
+
+          // drop neighbors that only have one point in contact, or that have an edge that is too small
+          if (this._evaluateNeighbors(poi, neighborPOI)) {
+            poi.neighbors.push(neighborPOI)
+          }
         }
       }
 
+      /*
       if (poi.type == "Capital") {
         console.log(poi.neighbors)
         console.log("for capital at " + poi.cellIndex)
-      }
+      }*/
     }
 
     let allRoadPoints = this.allPOIs.filter((poi) => {
@@ -194,6 +210,38 @@ class TerrainGenerator {
       }
     }
 
+  }
+
+  // returns true if the cells are allowed (by us) to be neighbors
+  _evaluateNeighbors(cellOne, cellTwo) {
+    let edge = this.getSharedEdge(cellOne, cellTwo)
+    if (edge.length != 2) {
+      // edges with only one point are not to be considered neighbors
+      return false
+    }
+
+    let v1 = new Vec2D(edge[0][0], edge[0][1])
+    let v2 = new Vec2D(edge[1][0], edge[1][1])
+
+    let minEdgeDistance = 10
+    let edgeDistance = v1.getDistSqFromVec(v2)
+
+    return edgeDistance > minEdgeDistance*minEdgeDistance
+  }
+
+  // cellOne: POI
+  // cellTwo: POI
+  // returns [ [Float, Float], ... n] - array of point arrays
+  getSharedEdge(cellOne, cellTwo) {
+    // get verticies of each cell
+    let v1 = Array.from(this.allVoronoi.cellPolygon(cellOne.cellIndex))
+    let v2 = Array.from(this.allVoronoi.cellPolygon(cellTwo.cellIndex))
+    let vShared = v1.filter((e1)=>{ return v2.find( (e2)=> { return this._compareFloatVertArray(e1, e2)} ) != undefined  })
+    if (vShared.length == 3) {
+      // voronoi polygons contain the start/end vertex twice-- remove it
+      vShared.splice(2,1)
+    }
+    return vShared
   }
 
   // fromPoints: [posObj]  - points to be the furthest from
@@ -323,17 +371,47 @@ class TerrainGenerator {
           g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
         }
 
+        /* draw roads (normal line)
         for (let road of this.roads) {
           // TODO: roads need to cross cells at their actual touching boarder not just directly between centroids
           let startPos = road[0].pos
           let endPos = road[1].pos
           g.drawLineEx(startPos.x, startPos.y, endPos.x, endPos.y, "rgb(133,42,42)", 4)
-        }
+        }//*/
 
+        //* draw roads (bezier)
+        for (let road of this.roads) {
+          let v1 = road[0].pos //start
+          let edge = this.getSharedEdge(road[0], road[1])
+          // todo handle error case (edge.length != 2)
+          let v2 = new Vec2D(edge[0][0], edge[0][1])
+          let v3 = new Vec2D(edge[1][0], edge[1][1])
+          let v4 = road[1].pos //end
+          
+          g.drawCubicBezierEx(this.normalizeBezier([v1, v2, v3, v4]), "", "rgb(133,42,42)", 4)
+        }
+        //*/
+
+        /*
+        // draw search path (normal line)
         for (let road of this.searchPath) {
           let startPos = road[0].pos
           let endPos = road[1].pos
           g.drawLineEx(startPos.x, startPos.y, endPos.x, endPos.y, "rgb(255,242,242)", 4)
+        }*/
+
+        // draw search path (bezier)
+        for (let road of this.searchPath) {
+          let v1 = road[0].pos //start
+          let edge = this.getSharedEdge(road[0], road[1])
+          // todo handle error case (edge.length != 2)
+          let v2 = new Vec2D(edge[0][0], edge[0][1])
+          let v3 = new Vec2D(edge[1][0], edge[1][1])
+          let v4 = road[1].pos //end
+          //g.drawCubicBezierEx([v1, v2, v3, v4], "", "rgb(255,242,242)", 4)
+          g.drawCubicBezierEx(this.normalizeBezier([v1, v2, v3, v4]), "", "rgb(255,242,242)", 4)
+          g.drawCircleEx(v2.x, v2.y, 3, "rgb(0,255,0)")
+          g.drawCircleEx(v3.x, v3.y, 3, "rgb(255,0,255)")
         }
 
         // draw cell index
@@ -369,8 +447,31 @@ class TerrainGenerator {
             //EventBus.ui.dispatch({evtName: "voronoi left clicked", cell: cellIndex})
           } else if (e.button == 2) {
             if (this.searchPathStart != null && this.voronoiCellToPOIMap.hasOwnProperty(cellIndex)) {
-              console.log("search from " + this.searchPathStart.cellIndex + " to " + cellIndex)
               let endPoint = this.voronoiCellToPOIMap[cellIndex]
+
+              // return path through shared edge MIDPOINT from start to current
+              /* 
+              let edge = this.getSharedEdge(this.searchPathStart, endPoint)
+              if (edge.length == 1) {
+                // -- turns out this is nasty; we should not consider 'one point' shared as being a neighbor
+                let v1 = this.searchPathStart
+                let vM = edge[0]
+                let v2 = endPoint
+                this.searchPath = [[v1, vM], [vM, v2]]
+              } else if (edge.length == 2) {
+                let v1 = this.searchPathStart
+                let vM = this.getEdgeMidpointObject(edge)
+                let v2 = endPoint
+                ///todo: 
+                console.log("todo: render a path that goes through the middle point of the edge")
+                this.searchPath = [[v1, vM], [vM, v2]]
+              } else if (edge.length > 2) {
+                console.log("bro, what?")
+              }*/
+
+              //* create a search path and store it in this.searchPath
+              console.log("search from " + this.searchPathStart.cellIndex + " to " + cellIndex)
+              
               let result = EZAstar.search(this.searchPathStart, endPoint)
 
               let resultCellIndexArr = result.map((e)=>{ return e.cellIndex })
@@ -387,6 +488,7 @@ class TerrainGenerator {
 
               console.log("got result " + resultCellIndexArr.join(", "))
               this.searchPathStart = null
+              //*/
             }
 
             // right click
@@ -398,6 +500,46 @@ class TerrainGenerator {
     })
 
     return node
+  }
+
+  normalizeBezier(vArr) {
+    let v1 = vArr[0]
+    let c1 = vArr[1]
+    let c2 = vArr[2]
+    let v2 = vArr[3]
+
+    let vDist = Math.sqrt(v1.getDistSqFromVec(v2))
+    let cDist = Math.sqrt(c1.getDistSqFromVec(c2))
+    if (vDist < cDist) {
+      // reduce cDist by moving c1 and c2 closer
+      let offset = (cDist - vDist) / 2
+      let offsetUnit = c1.getVecSub(c2).getUnitized().scalarMult(offset)
+      // apply offset to c1 towards c2
+      c1.subVec(offsetUnit)
+      // apply offset to c2 towards c1
+      c2.addVec(offsetUnit)
+    }
+    return [v1, c1, c2, v2]
+  }
+
+  // edge: [[Int, Int], [Int, Int]]
+  // returns object {pos: Vec2D}
+  getEdgeMidpointObject(edge) {
+    let v1 = new Vec2D(edge[0][0], edge[0][1])
+    let v2 = new Vec2D(edge[1][0], edge[1][1])
+    let pos = v1.subVec(v2).scalarMult(0.5).addVec(v2)
+    return { pos: pos }
+  }
+
+  _compareFloatVertArray(one, two) {
+    let tolerance = 0.00001
+    if (Math.abs(one[0] - two[0]) > tolerance) {
+      return false
+    }
+    if (Math.abs(one[1] - two[1]) > tolerance) {
+      return false
+    }
+    return true
   }
 
 
