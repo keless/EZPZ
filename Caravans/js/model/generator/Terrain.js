@@ -439,7 +439,10 @@ class TerrainGenerator {
           let v3 = new Vec2D(edge[1][0], edge[1][1])
           let v4 = road[1].pos //end
           //g.drawCubicBezierEx([v1, v2, v3, v4], "", "rgb(255,242,242)", 4)
-          g.drawCubicBezierEx(this.normalizeBezier([v1, v2, v3, v4]), "", "rgb(255,242,242)", 4)
+          let result = this.normalizeBezier([v1, v2, v3, v4])
+          g.drawCubicBezierEx(result, "", "rgb(255,242,242)", 4)
+          v2 = result[1]
+          v3 = result[2]
           g.drawCircleEx(v2.x, v2.y, 3, "rgb(0,255,0)")
           g.drawCircleEx(v3.x, v3.y, 3, "rgb(255,0,255)")
         }
@@ -540,17 +543,15 @@ class TerrainGenerator {
     let c2 = vArr[2]
     let v2 = vArr[3]
 
-    let vDist = Math.sqrt(v1.getDistSqFromVec(v2))
-    let cDist = Math.sqrt(c1.getDistSqFromVec(c2))
-    if (vDist < cDist) {
-      // reduce cDist by moving c1 and c2 closer
-      let offset = (cDist - vDist) / 2
-      let offsetUnit = c1.getVecSub(c2).getUnitized().scalarMult(offset)
-      // apply offset to c1 towards c2
-      c1.subVec(offsetUnit)
-      // apply offset to c2 towards c1
-      c2.addVec(offsetUnit)
-    }
+    // fixed distance between control points no matter what
+    let direction = c1.getVecSub(c2)
+    let midPoint = direction.scalarMult(0.5).getVecAdd(c2)
+
+    let constantDistanceHalf = 3 // half because its applied as an offset from the midpoint, so twice (once each direction +/-)
+    let offset = direction.getUnitized().scalarMult(constantDistanceHalf)
+    c1 = midPoint.getVecAdd(offset)
+    c2 = midPoint.getVecSub(offset)
+    
     return [v1, c1, c2, v2]
   }
 
