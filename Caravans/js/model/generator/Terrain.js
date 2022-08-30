@@ -309,6 +309,7 @@ class TerrainGenerator {
   // Create a nodeView that renders the given generated terrain
   createNodeView() {
     var node = new NodeView()
+    node.shouldCache = true
     node.size.setVal(this.regionWidth, this.regionHeight);
     node.addCustomDraw((g, x,y, ct) => {
 
@@ -431,6 +432,8 @@ class TerrainGenerator {
     })
 
     node.setClick((e, x, y)=> {
+      node.InvalidateCachedView()
+
       x += node.size.x/2
       y += node.size.y/2
       for (let i=0; i<this.allPOIs.length; i++) {

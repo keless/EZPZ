@@ -20,7 +20,7 @@ class GameStateView extends BaseStateView {
 		this.libraryPanel.pos.setVal(50, 250)
 		this.overLayer.addChild(this.libraryPanel)
 
-		this.libraryPanel.visible = false //zzz 
+		this.libraryPanel.visible = false
 
 		this.timer = new NodeView()
 		this.timer.setLabel("Time: 00000000", "12px Arial", "#000000")
@@ -107,12 +107,4 @@ class GameStateView extends BaseStateView {
 		let currTick = e.currTick
 		this.timer.updateLabel(`Timer: ${currTick}`)
 	}
-
-	/*
-	Draw(g, x,y, ct) { 
-		//super.Draw(g, x, y, ct)
-		
-		console.log("zzz render voronoi")
-		this.terrain.renderVoronoi(0,0, 600, 600, g.ctx)
-	}*/
 }

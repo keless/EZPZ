@@ -12,7 +12,7 @@ class NodeView extends BaseListener {
 		this.size = new Vec2D();
 		this.rotation = 0;
 		this.scale = 1;
-    	this._visible = true;
+    this._visible = true;
 
 		this.pUser = null;
 
@@ -20,6 +20,10 @@ class NodeView extends BaseListener {
 		this.parent = null;
 		
 		this.actions = [];
+
+		// if cachedView is non-nil, render it instead of iterating fnCustomDraw
+		this.cachedView = null;
+		this.shouldCache = false;
 
 		this.fnCustomDraw = [];
 		
@@ -806,9 +810,22 @@ class NodeView extends BaseListener {
 		if(this.pixelated) {
 			gfx.setSmoothing(false);
 		}
-		for(var f of this.fnCustomDraw) {
-			f(gfx, 0,0, ct);
+
+		if (this.cachedView == null) {
+			for(var f of this.fnCustomDraw) {
+				f(gfx, 0,0, ct);
+			}
+
+			this._cacheView(gfx)
+		} else {
+			if(gfx.drawCentered) {
+				gfx.drawImageEx(this.cachedView, -this.size.x/2, -this.size.y/2, this.size.x, this.size.y, false)
+			} else {
+				gfx.drawImageEx(this.cachedView, 0, 0, this.size.x, this.size.y, false)
+			}
+			
 		}
+
 		if(this.pixelated) {
 			gfx.setSmoothing(true);
 		}
@@ -819,6 +836,28 @@ class NodeView extends BaseListener {
 		}
 
 		gfx.restoreMatrix();
+	}
+
+	_cacheView( gfx ) {
+		if (this.cachedView == null && this.shouldCache) {
+			// Create an off-screen canvas element to cache the rendered view; writing to this is fast
+			this.cachedView = document.createElement('canvas')
+			let w = this.size.x
+			let h = this.size.y
+
+			this.cachedView.width = w
+			this.cachedView.height = h
+
+			// render current canvas subsection into the cached view
+			// BEWARE: anything behind transparancy will also be copied over
+			var context = this.cachedView.getContext('2d')
+
+			context.drawImage(gfx.canvas, 0,0, w,h, 0,0, w,h);
+		}
+	}
+
+	InvalidateCachedView() {
+		this.cachedView = null
 	}
 	
 	handleActions( ct ) {
