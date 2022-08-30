@@ -64,6 +64,8 @@ class TerrainGenerator {
     let allDelauny = document.Delaunay.from(allDelaunyPoints)
     this.allVoronoi = allDelauny.voronoi([0,0, this.regionWidth, this.regionHeight])
 
+    this._lloydsRelaxation(3)
+
     // 'points' is a subset of allPoints which we can begin to assign cities and other interesting things to
     var points = []
     for (let i=0; i<this.allPoints.length; i++) {
@@ -210,6 +212,33 @@ class TerrainGenerator {
       }
     }
 
+  }
+
+  _lloydsRelaxation(numRounds) {
+    for (let r=0; r<numRounds; r++) {
+      let pointsFlat = this.allVoronoi.delaunay.points
+      for (let i=0; i< pointsFlat.length/2; i++) {
+        let idx = i*2
+  
+        // move each point to the centroid of the generated Voronoi polygon
+        let cX = 0
+        let cY = 0
+        var poly = this.allVoronoi.cellPolygon(i)
+        for (let p=0; p<poly.length; p++) {
+          cX += poly[p][0]
+          cY += poly[p][1]
+        }
+        cX = cX / poly.length
+        cY = cY / poly.length
+  
+        pointsFlat[idx] = cX
+        pointsFlat[idx+1] = cY
+        this.allPoints[i].setVal(cX, cY)
+      }
+
+      // regenerate the voronoi
+      this.allVoronoi.update()
+    }
   }
 
   // returns true if the cells are allowed (by us) to be neighbors
