@@ -205,12 +205,16 @@ class TerrainGenerator {
           let segment = this._createRoad(result[i], result[i+1])
 
           // ensure uniqueness (so we dont have doubles of roads)
-          if(!this.roads.includes(segment)) {
+          if(this.roads.find((r)=> { return r[0].cellIndex == segment[0].cellIndex && r[1].cellIndex == segment[1].cellIndex  }) == undefined) {
             this.roads.push(segment)
           }
         }
       }
     }
+
+
+    //zzz test
+    this.roadRunner(this.roads)
 
   }
 
@@ -575,6 +579,38 @@ class TerrainGenerator {
     return true
   }
 
+  // roads: [ RoadSegment, ... n ]
+  // returns [ [RoadSegment, ... n], ... n ] where each sub array is a run of roads without any cross roads and can be rendered with a single bezier curve
+  roadRunner(roads) {
+    //zzz WIP
+    let map = new Map()
+    for (let i=0; i<roads.length; i++) {
+      let road = roads[i]
+      if (!map.has(road[0].cellIndex)) { map.set(road[0].cellIndex, new Set()) }
+      if (!map.has(road[1].cellIndex)) { map.set(road[1].cellIndex, new Set()) }
+      map.get(road[0].cellIndex).add(i)
+      map.get(road[1].cellIndex).add(i)
+    }
+
+    // debug print
+    let strArr = []
+    for(let key of map.keys()) {
+      strArr.push("{ " + key + " : " + map.get(key).size + " }")
+    }
+    console.log(strArr.join(", "))
+
+    // pull runs out of map
+    /*
+    let runs = []
+    while (map.length > 0) {
+      let current = map.keys().next().value
+      let run = [current]
+
+      let leftCell = current[0].cellIndex
+      
+    }*/
+
+  }
 
   // cellOne: POI
   // cellTwo: POI
