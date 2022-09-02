@@ -583,6 +583,9 @@ class TerrainGenerator {
   // returns [ [RoadSegment, ... n], ... n ] where each sub array is a run of roads without any cross roads and can be rendered with a single bezier curve
   roadRunner(roads) {
     //zzz WIP
+    console.log("zzz begin roadRunner")
+
+    // Map<Int: Set<Int>> - map [ cellIndex: set[roadIndex]]
     let map = new Map()
     for (let i=0; i<roads.length; i++) {
       let road = roads[i]
@@ -599,17 +602,96 @@ class TerrainGenerator {
     }
     console.log(strArr.join(", "))
 
+    let debugItr = 0
     // pull runs out of map
-    /*
+    //*
     let runs = []
-    while (map.length > 0) {
-      let current = map.keys().next().value
-      let run = [current]
+    while (map.size > 0) {
+      debugItr++
+      console.log("roadRunner while loop " + debugItr)
 
-      let leftCell = current[0].cellIndex
+      let currentCellIndex = map.keys().next().value
+      let currentRoadIndices = Array.from(map.get(currentCellIndex))
+
+      if (currentRoadIndices.length == 0) {
+        // we should never get here
+        console.warn("wat?")
+      } else if (currentRoadIndices.length == 2) {
+        // middle of road, follow left and right and join the two
+
+        let runLeft = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[0])
+        let runRight = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[1])
+        
+        // todo: join run left and run right somehow
+        console.log("zzz joining left and right runs - todo: debug this (probably need to reverse order of runLeft?)")
+        let run = runLeft.concat(runRight)
+        runs.push(run)
+      } else {
+        // if len = 1, or 3+, for each road treat it as the beginning of a run and follow it
+        for (let r=0; r< currentRoadIndices.length; r++) {
+          // start of road follow it
+          let run = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[r])
+          runs.push(run)
+        }
+      }
+      // remove node from map since it's now empty (if its not already deleted)
+      if (map.has(currentCellIndex)) {
+        if (map.get(currentCellIndex).size != 0) {
+          console.warn("about to delete non-empty road node: " + map.get(currentCellIndex).size)
+        }
+
+        console.log("mapp delete " + currentCellIndex)
+        map.delete(currentCellIndex)
+      }
       
-    }*/
+    }//*/
 
+    console.log("roadRunner finished, found "+runs.length+" runs")
+
+    return runs
+  }
+
+  // NOTE: recursive!
+  // map: Map<Int: Set<Int>> - map [ cellIndex: set[roadIndex]]
+  // currentCellIndex: Int - current cell index the run is processing from
+  // currentRoadIndex: Int - current road segment index the run is processing
+  // returns [RoadSegment] - the full or partial run of road segments
+  _followRun(map, roads, currentCellIndex, currentRoadIndex) {
+    // find the index of the cell this road is moving to FROM currentCellIndex
+    let road = roads[currentRoadIndex]
+    let nextCellIndex = road[0].cellIndex
+    if (nextCellIndex == currentCellIndex) {
+      nextCellIndex = road[1].cellIndex
+    }
+
+    let run = [road]
+
+    // see if we need to keep following the road
+    let nextRoadIndices = Array.from(map.get(nextCellIndex))
+    if (nextRoadIndices.length == 2) {
+      let nextRoadIndex = nextRoadIndices[0]
+      if (nextRoadIndex == currentRoadIndex) {
+        nextRoadIndex = nextRoadIndices[1]
+      }
+      // keep going
+      run.concat( this._followRun(map, roads, nextCellIndex, nextRoadIndex) )
+    } else {
+      // dont keep going, but remove the road from the next cell
+      map.get(nextCellIndex).delete(nextCellIndex)
+      if (map.get(nextCellIndex).size == 0) {
+        console.log("map delete " + nextCellIndex)
+        map.delete(nextCellIndex)
+      }
+    }
+    
+    // remove the road index from the set
+    map.get(currentCellIndex).delete(currentRoadIndex)
+    if (map.get(currentCellIndex).size == 0) {
+      console.log("map delete " + currentCellIndex)
+      map.delete(currentCellIndex)
+    }
+
+    return run
   }
 
   // cellOne: POI
