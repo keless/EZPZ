@@ -51,7 +51,7 @@ class TerrainGenerator {
     var margin = gridSize + 1
     var numCountries = this.countries.length
     var numCities = getRand(2*numCountries, 5*numCountries)
-    var numOtherPOI = 150 + getRand(0, 10)
+    var numOtherPOI = 20 + getRand(0, 10)
     var numPointsToGenerate = this.countries.length + numCities + numOtherPOI
 
     this.allPoints = this._generateUniquePoints(numPointsToGenerate, gridSize, margin,  this.regionWidth, this.regionHeight)
@@ -214,7 +214,7 @@ class TerrainGenerator {
 
 
     //zzz test
-    this.roadRunner(this.roads)
+    this.roadRuns = this.roadRunner(this.roads)
 
   }
 
@@ -413,7 +413,7 @@ class TerrainGenerator {
           g.drawLineEx(startPos.x, startPos.y, endPos.x, endPos.y, "rgb(133,42,42)", 4)
         }//*/
 
-        //* draw roads (bezier)
+        /* draw roads (bezier)
         for (let road of this.roads) {
           let v1 = road[0].pos //start
           let edge = this.getSharedEdge(road[0], road[1])
@@ -422,8 +422,12 @@ class TerrainGenerator {
           let v3 = new Vec2D(edge[1][0], edge[1][1])
           let v4 = road[1].pos //end
           
-          g.drawCubicBezierEx(this.normalizeBezier([v1, v2, v3, v4]), "", "rgb(133,42,42)", 4)
+          g.drawCubicBezierEx(this.normalizeBezier([v1, v2, v3, v4]), "", "rgb(133,42,42)", 2)
         }
+        //*/
+
+        //*/ draw road runs
+//zzz WIP
         //*/
 
         /*
@@ -434,6 +438,8 @@ class TerrainGenerator {
           g.drawLineEx(startPos.x, startPos.y, endPos.x, endPos.y, "rgb(255,242,242)", 4)
         }*/
 
+
+        //*
         // draw search path (bezier)
         for (let road of this.searchPath) {
           let v1 = road[0].pos //start
@@ -450,11 +456,12 @@ class TerrainGenerator {
           g.drawCircleEx(v2.x, v2.y, 3, "rgb(0,255,0)")
           g.drawCircleEx(v3.x, v3.y, 3, "rgb(255,0,255)")
         }
+        //*/
 
         // draw cell index
         //*
-        g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 12pt", "rgb(255, 255, 255)")
-        g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 8pt", "rgb(0, 0, 0)")
+        g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "12px Arial Heavy", "rgb(255, 255, 255)")
+        g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "11px Arial Heavy", "rgb(0, 0, 0)")
         //*/
       }
 
@@ -476,11 +483,11 @@ class TerrainGenerator {
         let cellIndex = this.allPOIs[i].cellIndex
 
         if (this.allVoronoi.contains(cellIndex, x, y)) {
-          console.log("clicked cell " + cellIndex + " at " + x +","+ y +" has neighbors " + this.voronoiCellToPOIMap[cellIndex].neighbors.map((e)=>{ return e.cellIndex }))
+          console.log("clicked cell " + cellIndex) // + " at " + x +","+ y +" has neighbors " + this.voronoiCellToPOIMap[cellIndex].neighbors.map((e)=>{ return e.cellIndex }))
 
           if (e.button == 0) {
             this.searchPathStart = this.voronoiCellToPOIMap[cellIndex]
-            console.log("start search from " + cellIndex)
+            //console.log("start search from " + cellIndex)
 
             // left click
             //EventBus.ui.dispatch({evtName: "voronoi left clicked", cell: cellIndex})
@@ -509,11 +516,11 @@ class TerrainGenerator {
               }*/
 
               //* create a search path and store it in this.searchPath
-              console.log("search from " + this.searchPathStart.cellIndex + " to " + cellIndex)
+              //console.log("search from " + this.searchPathStart.cellIndex + " to " + cellIndex)
               
               let result = EZAstar.search(this.searchPathStart, endPoint)
 
-              let resultCellIndexArr = result.map((e)=>{ return e.cellIndex })
+              //let resultCellIndexArr = result.map((e)=>{ return e.cellIndex })
 
               if (result.length == 0) {
                 this.searchPath = []
@@ -524,8 +531,7 @@ class TerrainGenerator {
                 }
               }
 
-
-              console.log("got result " + resultCellIndexArr.join(", "))
+              //console.log("got result " + resultCellIndexArr.join(", "))
               this.searchPathStart = null
               //*/
             }
@@ -582,7 +588,7 @@ class TerrainGenerator {
   // roads: [ RoadSegment, ... n ]
   // returns [ [RoadSegment, ... n], ... n ] where each sub array is a run of roads without any cross roads and can be rendered with a single bezier curve
   roadRunner(roads) {
-    //zzz WIP
+
     console.log("zzz begin roadRunner")
 
     // Map<Int: Set<Int>> - map [ cellIndex: set[roadIndex]]
@@ -611,6 +617,7 @@ class TerrainGenerator {
       console.log("roadRunner while loop " + debugItr)
 
       let currentCellIndex = map.keys().next().value
+      //console.log("zzz loop start with cell " + currentCellIndex)
       let currentRoadIndices = Array.from(map.get(currentCellIndex))
 
       if (currentRoadIndices.length == 0) {
@@ -619,34 +626,46 @@ class TerrainGenerator {
       } else if (currentRoadIndices.length == 2) {
         // middle of road, follow left and right and join the two
 
+        //console.log("zzz follow roads 2")
         let runLeft = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[0])
         let runRight = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[1])
         
         // todo: join run left and run right somehow
-        console.log("zzz joining left and right runs - todo: debug this (probably need to reverse order of runLeft?)")
-        let run = runLeft.concat(runRight)
+        //console.log("zzz joining left and right runs - todo: debug this (probably need to reverse order of runLeft?)")
+        let run = runLeft.reverse().concat(runRight)
+        console.log("result " + run.map((e)=> { return " " + e[0].cellIndex +"_"+e[1].cellIndex }).join(", "))
+        //console.log("result " + run.join(", "))
         runs.push(run)
       } else {
         // if len = 1, or 3+, for each road treat it as the beginning of a run and follow it
         for (let r=0; r< currentRoadIndices.length; r++) {
-          // start of road follow it
-          let run = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[r])
-          runs.push(run)
+          // ensure it hasnt been removed by previous run
+          if (map.has(currentCellIndex) && map.get(currentCellIndex).has(currentRoadIndices[r])) {
+            // start of road follow it
+            let run = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[r])
+            console.log("result " + run.map((e)=> { return " " + e[0].cellIndex +"_"+e[1].cellIndex }).join(", "))
+            //console.log("result " + run.join(", "))
+            runs.push(run)
+          } else {
+            //console.log(" skip node that was removed already")
+          }
         }
       }
+
       // remove node from map since it's now empty (if its not already deleted)
       if (map.has(currentCellIndex)) {
         if (map.get(currentCellIndex).size != 0) {
           console.warn("about to delete non-empty road node: " + map.get(currentCellIndex).size)
         }
 
-        console.log("mapp delete " + currentCellIndex)
+        //console.log("mapp delete " + currentCellIndex)
         map.delete(currentCellIndex)
       }
       
     }//*/
 
     console.log("roadRunner finished, found "+runs.length+" runs")
+    console.log(runs)
 
     return runs
   }
@@ -664,34 +683,50 @@ class TerrainGenerator {
       nextCellIndex = road[1].cellIndex
     }
 
-    let run = [road]
+    let run = [road] //[this._createDebugRoad(road)]
+
+    //console.log("zzz road "+currentRoadIndex+" @ " + currentCellIndex + " to " + nextCellIndex)
+
+    // remove the start road index from the set (MUST do this before we recurse!)
+    //console.log(" remove C road " + currentRoadIndex + " from cell " + currentCellIndex)
+    if (map.has(currentCellIndex)) {
+      map.get(currentCellIndex).delete(currentRoadIndex)
+      if (map.get(currentCellIndex).size == 0) {
+        console.log("map delete " + currentCellIndex + " : start of run, empty")
+        map.delete(currentCellIndex)
+      }
+    }
 
     // see if we need to keep following the road
-    let nextRoadIndices = Array.from(map.get(nextCellIndex))
-    if (nextRoadIndices.length == 2) {
-      let nextRoadIndex = nextRoadIndices[0]
-      if (nextRoadIndex == currentRoadIndex) {
-        nextRoadIndex = nextRoadIndices[1]
-      }
-      // keep going
-      run.concat( this._followRun(map, roads, nextCellIndex, nextRoadIndex) )
-    } else {
-      // dont keep going, but remove the road from the next cell
-      map.get(nextCellIndex).delete(nextCellIndex)
+    if (map.has(nextCellIndex)) { //if we're looking backwards it wont be there anymore
+      let nextRoadIndices = Array.from(map.get(nextCellIndex))
+      if (nextRoadIndices.length == 2) {
+//        console.log("zzz continue following next")
+        let nextRoadIndex = nextRoadIndices[0]
+        if (nextRoadIndex == currentRoadIndex) {
+          nextRoadIndex = nextRoadIndices[1]
+        }
+
+        // keep going
+        let further = this._followRun(map, roads, nextCellIndex, nextRoadIndex)
+        run = run.concat(further)
+
+      } 
+//        console.log("zzz  next is an END node")
+      // remove the road from the next cell, whether or not it was an end node
+      //console.log(" remove N  road " + currentRoadIndex + " from cell " + nextCellIndex)
+      map.get(nextCellIndex).delete(currentRoadIndex)
       if (map.get(nextCellIndex).size == 0) {
-        console.log("map delete " + nextCellIndex)
+        console.log("map delete " + nextCellIndex + " : end of run, empty")
         map.delete(nextCellIndex)
       }
     }
-    
-    // remove the road index from the set
-    map.get(currentCellIndex).delete(currentRoadIndex)
-    if (map.get(currentCellIndex).size == 0) {
-      console.log("map delete " + currentCellIndex)
-      map.delete(currentCellIndex)
-    }
 
     return run
+  }
+
+  _createDebugRoad(road) {
+    return "" + road[0].cellIndex + "_" + road[1].cellIndex
   }
 
   // cellOne: POI
