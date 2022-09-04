@@ -164,7 +164,29 @@ class Graphics {
 		if(fs) { this.ctx.fill(); }
 		if(ss) { this.ctx.stroke(); }
 	}
-	drawCubicBezierEx(verts, fillStyle, strokeStyle, strokeSize) {
+	drawSmoothLineEx(verts, fillStyle, strokeStyle, strokeSize, closePath) {
+		var fs = this._setStyle(fillStyle, this.fillStyle);
+		var ss = this._setStyle(strokeStyle , this.strokeStyle);
+		this.ctx.fillStyle = fs;
+		this.ctx.strokeStyle = ss;
+		this.ctx.lineWidth = strokeSize || this.strokeSize;
+
+		if (verts.length < 4) {
+			console.warn("Graphics.drawSmoothLineEx() - invalid number of verts, must be at least 4");
+			return 
+		}
+
+		this.ctx.beginPath();
+		this.ctx.moveTo(verts[0].x, verts[0].y);
+		let step = 4
+		for (let i=0; i<verts.length; i += step) {
+			this.ctx.bezierCurveTo(verts[i + 1].x, verts[i + 1].y, verts[i + 2].x, verts[i + 2].y, verts[i + 3].x, verts[i + 3].y);
+		}
+		if (closePath) { this.ctx.closePath() }
+		if(fs) { this.ctx.fill() }
+		if(ss) { this.ctx.stroke() }
+	}
+	drawCubicBezierEx(verts, fillStyle, strokeStyle, strokeSize, closePath) {
 		var fs = this._setStyle(fillStyle, this.fillStyle);
 		var ss = this._setStyle(strokeStyle , this.strokeStyle);
 		this.ctx.fillStyle = fs;
@@ -179,9 +201,9 @@ class Graphics {
 		this.ctx.beginPath();
 		this.ctx.moveTo(verts[0].x, verts[0].y);
 		this.ctx.bezierCurveTo(verts[1].x, verts[1].y, verts[2].x, verts[2].y, verts[3].x, verts[3].y);
-		//this.ctx.closePath();
-		if(fs) { this.ctx.fill(); }
-		if(ss) { this.ctx.stroke(); }
+		if (closePath) { this.ctx.closePath() }
+		if(fs) { this.ctx.fill() }
+		if(ss) { this.ctx.stroke() }
 	}
 	drawLine(x1,y1, x2,y2) {
 		this.ctx.strokeStyle = this.strokeStyle;

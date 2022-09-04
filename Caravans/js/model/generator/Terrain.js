@@ -428,6 +428,37 @@ class TerrainGenerator {
 
         //*/ draw road runs
 //zzz WIP
+        
+        for (var rr=0; rr<this.roadRuns.length; rr++) {
+          let run = this.roadRuns[rr]
+
+          let roadPoints = []
+          for (var runIdx=0; runIdx < run.length; runIdx++) {
+            let road = run[runIdx]
+
+            let v1 = road[0].pos //start
+            let edge = this.getSharedEdge(road[0], road[1])
+            let v2 = new Vec2D(edge[0][0], edge[0][1])
+            let v3 = new Vec2D(edge[1][0], edge[1][1])
+            let v4 = road[1].pos //end
+
+            let normalized = this.normalizeBezier([v1, v2, v3, v4])
+            roadPoints.push(normalized[0])
+            roadPoints.push(normalized[1])
+            roadPoints.push(normalized[2])
+            roadPoints.push(normalized[3])
+            /*
+            roadPoints.push(v1)
+            roadPoints.push(v2)
+            roadPoints.push(v3)
+            roadPoints.push(v4)
+            */
+          }
+
+          g.drawSmoothLineEx(roadPoints, "", "rgb(133,42,42)", 2)
+        }
+
+
         //*/
 
         /*
@@ -627,8 +658,8 @@ class TerrainGenerator {
         // middle of road, follow left and right and join the two
 
         //console.log("zzz follow roads 2")
-        let runLeft = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[0])
-        let runRight = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[1])
+        let runLeft = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[0], true)
+        let runRight = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[1], false)
         
         // todo: join run left and run right somehow
         //console.log("zzz joining left and right runs - todo: debug this (probably need to reverse order of runLeft?)")
@@ -642,7 +673,7 @@ class TerrainGenerator {
           // ensure it hasnt been removed by previous run
           if (map.has(currentCellIndex) && map.get(currentCellIndex).has(currentRoadIndices[r])) {
             // start of road follow it
-            let run = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[r])
+            let run = this._followRun(map, this.roads, currentCellIndex, currentRoadIndices[r], false)
             console.log("result " + run.map((e)=> { return " " + e[0].cellIndex +"_"+e[1].cellIndex }).join(", "))
             //console.log("result " + run.join(", "))
             runs.push(run)
@@ -674,8 +705,9 @@ class TerrainGenerator {
   // map: Map<Int: Set<Int>> - map [ cellIndex: set[roadIndex]]
   // currentCellIndex: Int - current cell index the run is processing from
   // currentRoadIndex: Int - current road segment index the run is processing
+  // shouldFlip: Bool - should flip the expected orientation of the road
   // returns [RoadSegment] - the full or partial run of road segments
-  _followRun(map, roads, currentCellIndex, currentRoadIndex) {
+  _followRun(map, roads, currentCellIndex, currentRoadIndex, shouldFlip) {
     // find the index of the cell this road is moving to FROM currentCellIndex
     let road = roads[currentRoadIndex]
     let nextCellIndex = road[0].cellIndex
@@ -683,7 +715,18 @@ class TerrainGenerator {
       nextCellIndex = road[1].cellIndex
     }
 
-    let run = [road] //[this._createDebugRoad(road)]
+    //zzz TODO: lets organize this road in the appropriate direction to make our job easier later
+
+    let orientedRoad = []
+    if (road[0].cellIndex == currentCellIndex && !shouldFlip) {
+      orientedRoad.push(road[0])
+      orientedRoad.push(road[1])
+    } else {
+      orientedRoad.push(road[1])
+      orientedRoad.push(road[0])
+    }
+
+    let run = [orientedRoad] //[this._createDebugRoad(road)]
 
     //console.log("zzz road "+currentRoadIndex+" @ " + currentCellIndex + " to " + nextCellIndex)
 
