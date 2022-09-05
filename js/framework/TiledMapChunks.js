@@ -18,8 +18,8 @@ class TiledJsonFileFormat {
     this.orientation = "orthogonal"
     this.renderorder = "right-down"
     this.tiledversion = "1.9.1"
-    this.tileheight = 32
-    this.tilewidth = 32
+    this.tileheight = TiledTilesetJsonFileFormat.tileSize
+    this.tilewidth = TiledTilesetJsonFileFormat.tileSize
 
     // tilesets: [TiledTilesetJsonFileFormat]
     this.tilesets = []
@@ -63,9 +63,30 @@ class TiledChunkJsonFileFormat {
   }
 }
 
+// embedded hardcoded tileset
+class TiledTilesetJsonFileFormat {
+
+  static tileSize = 32
+
+  constructor() {
+    this.columns = 21
+    this.firstgid = 1,
+    this.image = "terrain.png"
+    this.imageheight = 736
+    this.imagewidth = 672
+    this.margin = 0
+    this.name = "terrain"
+    this.spacing = 0
+    this.tilecount = 483
+    this.tileheight = TiledTilesetJsonFileFormat.tileSize
+    this.tilewidth = TiledTilesetJsonFileFormat.tileSize
+  }
+}
+
+/* external tileset
 class TiledTilesetJsonFileFormat {
   constructor() {
     this.firstgid = 1,
     this.source = "terrain.tsx"
   }
-}
+}*/

@@ -217,7 +217,6 @@ class TerrainGenerator {
       }
     }
 
-
     //zzz test
     this.roadRunner(this.roads)
 
@@ -667,21 +666,27 @@ class TerrainGenerator {
     // Layer1 - base terrain without details
     let g = Service.Get("gfx")
     // make sure we're rendered correctly
-    this.Draw(g, 0, 0, 0, false, false, false, false)
 
+    let saveCentered = g.drawCentered
+    g.drawCentered = false
+    this.Draw(g, 0, 0, 0, false, false, false, false)
+    g.drawCentered = saveCentered
+    
+    
     // imgData is a 1D array of r, g, b, a, pixel value sets
     // the location of 'r' of pixel at (0, 1) is imgData[ (0 + 1*imgDataStep) + 0]
     // the location of 'b' of pixel at (10, 0) is imgData[ (10*pixelStep + 0) + 2]
     // eg: colorIndex of pixel at (x, y) = imgData[ (x*pixelStep + y*imgDataStep) + colorIndex]
-    let imgData = g.ctx.getImageData(0,0, this.regionWidth, this.regionHeight)
+    let imgData = g.ctx.getImageData(0,0, this.regionWidth, this.regionHeight).data
     let pixelStep = 4 //rgba
     let imgDataStep = this.regionWidth * pixelStep
 
     let chunkSize = TiledChunkJsonFileFormat.chunkSize
-    file.width = Math.ceil(this.regionWidth / chunkSize)
-    file.height = Math.ceil(this.regionHeight / chunkSize)
-    let numChunksW = file.width / chunkSize
-    let numChunksH = file.height / chunkSize
+
+    file.width = Math.ceil(this.regionWidth / file.tileheight)
+    file.height = Math.ceil(this.regionHeight / file.tilewidth)
+    let numChunksW = Math.ceil(this.regionWidth / chunkSize)
+    let numChunksH = Math.ceil(this.regionHeight / chunkSize)
     let numChunks = numChunksW * numChunksH
 
     //let chunkStep = numChunksW * chunkSize
@@ -696,18 +701,20 @@ class TerrainGenerator {
       chunk.x = chunkX * chunkSize
       chunk.y = chunkY * chunkSize
 
+      console.log("begin chunk " + c + "["+chunkX+","+chunkY+"] @ " + chunk.x + "," + chunk.y)
+
       let numTiles = chunkSize * chunkSize
 
       let tileOffsetX = chunk.x 
       let tileOffsetY = chunk.y
       for(let tileIdx=0; tileIdx < numTiles; tileIdx++) {
-        let chunkTileX = tileIdx % chunkSize
-        let chunkTileY = Math.floor(tileIdx / chunkSize)
+        let tileX = tileOffsetX + (tileIdx % chunkSize)
+        let tileY = tileOffsetY + Math.floor(tileIdx / chunkSize)
+
+        
         
         //remember that one pixel of source image == one tile at destination
-        let pixelX = (tileOffsetX + chunkTileX)
-        let pixelY = (tileOffsetY + chunkTileY)
-        let pixelDataStartIndex = (pixelX * pixelStep) + (pixelY * imgDataStep)
+        let pixelDataStartIndex = (tileX * pixelStep) + (tileY * imgDataStep)
 
         let r = imgData[pixelDataStartIndex + 0]
         let g = imgData[pixelDataStartIndex + 1]
@@ -718,6 +725,8 @@ class TerrainGenerator {
         let color = "rgb("+r+", "+g+", "+b+")"
         let tilesetIdx = this._rgbaToTileSetIndex(color)
         chunk.data.push(tilesetIdx)
+
+        console.log("begin tile " + tileIdx + " @ " + tileX + "," + tileY + " = " + tilesetIdx)
 
         //zzz todo: calculate transition overlay layer from known existing tiles (eg: up, left, and up+left) to place on upper layer
       }
@@ -732,13 +741,13 @@ class TerrainGenerator {
   _rgbaToTileSetIndex(colorKey) {
     switch(colorKey) {
       case this.seaColor:
-        return 123
+        return 123 + 1
       case this.roadColor:
-        return 64
+        return 64 + 1
       case this.cityColor:
-        return 334
+        return 334 + 1
       case this.grassColor:
-        return 190
+        return 190 + 1
       default:
         return 0
     }
