@@ -42,6 +42,11 @@ class TerrainGenerator {
 
     this.searchPathStart = null
     this.searchPath = []
+
+    this.seaColor = "rgb(0, 0, 250)"
+    this.grassColor = "rgb(0, 250, 0)"
+    this.roadColor = "rgb(133, 42, 42)"
+    this.cityColor = "rgb(250, 250, 250)"
   }
 
   generate() {
@@ -216,6 +221,18 @@ class TerrainGenerator {
     //zzz test
     this.roadRunner(this.roads)
 
+    let jsonObject = this.toTiledJson()
+    let fileJson = JSON.stringify(jsonObject, null, " ")
+    this.downloadFile(fileJson, "generatedMap.json")
+  }
+
+  downloadFile(text, filename = 'untitled.dat') {
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   }
 
   _lloydsRelaxation(numRounds) {
@@ -339,18 +356,13 @@ class TerrainGenerator {
     return new Vec2D(nx, ny)
   }
 
-  // Create a nodeView that renders the given generated terrain
-  createNodeView() {
-    var node = new NodeView()
-    node.shouldCache = true
-    node.size.setVal(this.regionWidth, this.regionHeight);
-    node.addCustomDraw((g, x,y, ct) => {
+  Draw(g, x,y, ct, showFactionColors, showCellOutlines, showCellNumbers, showSearchPath) {
 
       // just fill water as background, instead of drawing edge cells
-      g.drawRectEx(0, 0, this.regionWidth, this.regionHeight, "rgb(0, 0, 250)")
+      g.drawRectEx(0, 0, this.regionWidth, this.regionHeight, this.seaColor)
 
       if(g.drawCentered) {
-        g.translate(-node.size.x/2, -node.size.y/2)
+        g.translate(-this.regionWidth/2, -this.regionHeight/2)
       }
 
       // draw "water" edge cells first
@@ -382,11 +394,18 @@ class TerrainGenerator {
         g.ctx.strokeStyle = "rgb(0,0,0)"
         g.ctx.lineWidth = 2
         let fillStyle = this.factionColors[factionIndex]
+        if (!showFactionColors) {
+          fillStyle = this.grassColor
+        }
         g.ctx.fillStyle = fillStyle
         g.ctx.beginPath()
         this.allVoronoi.renderCell(cellIndex, g.ctx)
         g.ctx.fill()
-        g.ctx.stroke()
+
+        if (showCellOutlines) {
+          g.ctx.stroke()
+        }
+        
 
         // draw circle if capital or city
         if (poi.type != "Wilds") {
@@ -401,6 +420,12 @@ class TerrainGenerator {
           } else if (poi.type == "Capital") {
             radius = 10
             fillStyle = "rgb(255, 255, 255)"
+          }
+          if (!showCellOutlines) {
+            strokeStyle = ""
+          }
+          if (!showFactionColors) {
+            fillStyle = this.cityColor
           }
           g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
         }
@@ -422,7 +447,7 @@ class TerrainGenerator {
           let v3 = new Vec2D(edge[1][0], edge[1][1])
           let v4 = road[1].pos //end
           
-          g.drawCubicBezierEx(this.normalizeBezier([v1, v2, v3, v4]), "", "rgb(133,42,42)", 4)
+          g.drawCubicBezierEx(this.normalizeBezier([v1, v2, v3, v4]), "", this.roadColor, 4)
         }
         //*/
 
@@ -435,27 +460,29 @@ class TerrainGenerator {
         }*/
 
         // draw search path (bezier)
-        for (let road of this.searchPath) {
-          let v1 = road[0].pos //start
-          let edge = this.getSharedEdge(road[0], road[1])
-          // todo handle error case (edge.length != 2)
-          let v2 = new Vec2D(edge[0][0], edge[0][1])
-          let v3 = new Vec2D(edge[1][0], edge[1][1])
-          let v4 = road[1].pos //end
-          //g.drawCubicBezierEx([v1, v2, v3, v4], "", "rgb(255,242,242)", 4)
-          let result = this.normalizeBezier([v1, v2, v3, v4])
-          g.drawCubicBezierEx(result, "", "rgb(255,242,242)", 4)
-          v2 = result[1]
-          v3 = result[2]
-          g.drawCircleEx(v2.x, v2.y, 3, "rgb(0,255,0)")
-          g.drawCircleEx(v3.x, v3.y, 3, "rgb(255,0,255)")
+        if (showSearchPath) {
+          for (let road of this.searchPath) {
+            let v1 = road[0].pos //start
+            let edge = this.getSharedEdge(road[0], road[1])
+            // todo handle error case (edge.length != 2)
+            let v2 = new Vec2D(edge[0][0], edge[0][1])
+            let v3 = new Vec2D(edge[1][0], edge[1][1])
+            let v4 = road[1].pos //end
+            //g.drawCubicBezierEx([v1, v2, v3, v4], "", "rgb(255,242,242)", 4)
+            let result = this.normalizeBezier([v1, v2, v3, v4])
+            g.drawCubicBezierEx(result, "", "rgb(255,242,242)", 4)
+            v2 = result[1]
+            v3 = result[2]
+            g.drawCircleEx(v2.x, v2.y, 3, "rgb(0,255,0)")
+            g.drawCircleEx(v3.x, v3.y, 3, "rgb(255,0,255)")
+          }
         }
 
         // draw cell index
-        //*
-        g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 12pt", "rgb(255, 255, 255)")
-        g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 8pt", "rgb(0, 0, 0)")
-        //*/
+        if (showCellNumbers) {
+          g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 12pt", "rgb(255, 255, 255)")
+          g.drawTextEx("" + poi.cellIndex, poi.pos.x, poi.pos.y, "Arial 8pt", "rgb(0, 0, 0)")
+        }
       }
 
       // Show country voronoi lines
@@ -465,6 +492,15 @@ class TerrainGenerator {
       this.countryVoronoi.render(g.ctx)
       g.ctx.stroke()
       */
+  }
+
+  // Create a nodeView that renders the given generated terrain
+  createNodeView() {
+    var node = new NodeView()
+    node.shouldCache = true
+    node.size.setVal(this.regionWidth, this.regionHeight);
+    node.addCustomDraw((g, x,y, ct) => {
+      this.Draw(g, x, y, ct, true, true, true, true)
     })
 
     node.setClick((e, x, y)=> {
@@ -582,7 +618,6 @@ class TerrainGenerator {
   // roads: [ RoadSegment, ... n ]
   // returns [ [RoadSegment, ... n], ... n ] where each sub array is a run of roads without any cross roads and can be rendered with a single bezier curve
   roadRunner(roads) {
-    //zzz WIP
     let map = new Map()
     for (let i=0; i<roads.length; i++) {
       let road = roads[i]
@@ -592,24 +627,13 @@ class TerrainGenerator {
       map.get(road[1].cellIndex).add(i)
     }
 
-    // debug print
+    /* // debug print
     let strArr = []
     for(let key of map.keys()) {
       strArr.push("{ " + key + " : " + map.get(key).size + " }")
     }
     console.log(strArr.join(", "))
-
-    // pull runs out of map
-    /*
-    let runs = []
-    while (map.length > 0) {
-      let current = map.keys().next().value
-      let run = [current]
-
-      let leftCell = current[0].cellIndex
-      
-    }*/
-
+    //*/
   }
 
   // cellOne: POI
@@ -623,6 +647,100 @@ class TerrainGenerator {
       return [cellOne, cellTwo]
     } else {
       return [cellTwo, cellOne]
+    }
+  }
+
+  // Tiled support
+  // returns a json object that represents the terrain as a Tiled format
+  toTiledJson() {
+    let file = new TiledJsonFileFormat()
+
+    // how many tiles one pixel from the terrain represents
+    let scaleFactor = 1
+    file.height = this.regionHeight * scaleFactor
+    file.width = this.regionWidth * scaleFactor
+
+    // just use default
+    let tileset = new TiledTilesetJsonFileFormat()
+    file.tilesets.push(tileset)
+
+    // Layer1 - base terrain without details
+    let g = Service.Get("gfx")
+    // make sure we're rendered correctly
+    this.Draw(g, 0, 0, 0, false, false, false, false)
+
+    // imgData is a 1D array of r, g, b, a, pixel value sets
+    // the location of 'r' of pixel at (0, 1) is imgData[ (0 + 1*imgDataStep) + 0]
+    // the location of 'b' of pixel at (10, 0) is imgData[ (10*pixelStep + 0) + 2]
+    // eg: colorIndex of pixel at (x, y) = imgData[ (x*pixelStep + y*imgDataStep) + colorIndex]
+    let imgData = g.ctx.getImageData(0,0, this.regionWidth, this.regionHeight)
+    let pixelStep = 4 //rgba
+    let imgDataStep = this.regionWidth * pixelStep
+
+    let chunkSize = TiledChunkJsonFileFormat.chunkSize
+    file.width = Math.ceil(this.regionWidth / chunkSize)
+    file.height = Math.ceil(this.regionHeight / chunkSize)
+    let numChunksW = file.width / chunkSize
+    let numChunksH = file.height / chunkSize
+    let numChunks = numChunksW * numChunksH
+
+    //let chunkStep = numChunksW * chunkSize
+
+    // Fill base layer
+    let baseLayer = new TiledLayerJsonFileFormat()
+    for(let c=0; c< numChunks; c++) {
+      let chunkX = c % numChunksW
+      let chunkY = Math.floor(c / numChunksW)
+
+      let chunk = new TiledChunkJsonFileFormat()
+      chunk.x = chunkX * chunkSize
+      chunk.y = chunkY * chunkSize
+
+      let numTiles = chunkSize * chunkSize
+
+      let tileOffsetX = chunk.x 
+      let tileOffsetY = chunk.y
+      for(let tileIdx=0; tileIdx < numTiles; tileIdx++) {
+        let chunkTileX = tileIdx % chunkSize
+        let chunkTileY = Math.floor(tileIdx / chunkSize)
+        
+        //remember that one pixel of source image == one tile at destination
+        let pixelX = (tileOffsetX + chunkTileX)
+        let pixelY = (tileOffsetY + chunkTileY)
+        let pixelDataStartIndex = (pixelX * pixelStep) + (pixelY * imgDataStep)
+
+        let r = imgData[pixelDataStartIndex + 0]
+        let g = imgData[pixelDataStartIndex + 1]
+        let b = imgData[pixelDataStartIndex + 2]
+        //let a = imgData[pixelDataStartIndex + 3]
+
+        // look up the color to find the tile index
+        let color = "rgb("+r+", "+g+", "+b+")"
+        let tilesetIdx = this._rgbaToTileSetIndex(color)
+        chunk.data.push(tilesetIdx)
+
+        //zzz todo: calculate transition overlay layer from known existing tiles (eg: up, left, and up+left) to place on upper layer
+      }
+      baseLayer.chunks.push(chunk)
+    }
+    file.layers.push(baseLayer)
+
+    return file
+  }
+
+  // Hardcoded lookup table from our color constants to the tileset index
+  _rgbaToTileSetIndex(colorKey) {
+    switch(colorKey) {
+      case this.seaColor:
+        return 123
+      case this.roadColor:
+        return 64
+      case this.cityColor:
+        return 334
+      case this.grassColor:
+        return 190
+      default:
+        return 0
     }
   }
 }

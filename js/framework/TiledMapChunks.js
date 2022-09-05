@@ -15,8 +15,8 @@ class TiledJsonFileFormat {
 
     this.nextlayerid = 4
     this.nextobjectid = 1
-    this.orientation = orthogonal
-    this.renderorder = right-down
+    this.orientation = "orthogonal"
+    this.renderorder = "right-down"
     this.tiledversion = "1.9.1"
     this.tileheight = 32
     this.tilewidth = 32
@@ -27,6 +27,8 @@ class TiledJsonFileFormat {
     this.type = "map"
     this.version = "1.9"
   }
+
+  static chunkSize
 }
 
 class TiledLayerJsonFileFormat {
@@ -48,11 +50,14 @@ class TiledLayerJsonFileFormat {
 }
 
 class TiledChunkJsonFileFormat {
+
+  static chunkSize = 16
+
   constructor() {
     // data: [Int] - tile index of each tile (in a 2d array represented as 1d array with wrap size = this.width)
     this.data = []
-    this.height = 16
-    this.width = 16
+    this.height = TiledChunkJsonFileFormat.chunkSize
+    this.width = TiledChunkJsonFileFormat.chunkSize
     this.x = 0
     this.y = 0
   }
