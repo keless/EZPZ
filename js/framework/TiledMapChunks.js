@@ -47,6 +47,19 @@ class TiledLayerJsonFileFormat {
     this.x = 0
     this.y = 0
   }
+
+  // x, y: Int - globally scoped tile coordinates (not pixel coordinates)
+  // returns Int - the tileset index data for the tile at the given coordinates
+  getTileData(x, y) {
+    for (let c=0; c< this.chunks.length; c++) {
+      let chunk = this.chunks[c]
+      let rangeXmax = chunk.x + chunk.width
+      let rangeYmax = chunk.y + chunk.height
+      if (rangeXmax > x && rangeYmax > y) {
+        return chunk.getTileData(x, y)
+      }
+    }
+  }
 }
 
 class TiledChunkJsonFileFormat {
@@ -60,6 +73,14 @@ class TiledChunkJsonFileFormat {
     this.width = TiledChunkJsonFileFormat.chunkSize
     this.x = 0
     this.y = 0
+  }
+
+  // x, y: Int - globally scoped coordinates (eg: 0,0 is only valid if this chunk.x,y == 0,0)
+  // returns Int - the tileset index data for the tile at the given coordinates
+  getTileData(x, y) {
+    let localX = x - this.x
+    let localY = y - this.y
+    return this.data[ localX + (localY * this.width) ]
   }
 }
 

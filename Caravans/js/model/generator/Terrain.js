@@ -704,11 +704,13 @@ class TerrainGenerator {
 
     // Fill base layer
     let baseLayer = new TiledLayerJsonFileFormat()
+    file.layers.push(baseLayer)
     for(let c=0; c< numChunks; c++) {
       let chunkX = c % numChunksW
       let chunkY = Math.floor(c / numChunksW)
 
       let chunk = new TiledChunkJsonFileFormat()
+      baseLayer.chunks.push(chunk)
       chunk.x = chunkX * chunkSize
       chunk.y = chunkY * chunkSize
 
@@ -736,23 +738,30 @@ class TerrainGenerator {
         //let color = "rgb("+r+", "+g+", "+b+")"
         let tilesetIdx = this._rgbToTilesetIndex(r, g, b)
 
-        //zzz TODO: what about when its the first pixel of the current chunk??
-        if (tilesetIdx == 0 && chunk.data.length > 0) {
+        //zzz TODO: what about when its the first pixel of the current chunk?? or if its a different row?!
+        if (tilesetIdx == 0) {
           console.log("begin tile " + tileIdx + " @ " + tileX + "," + tileY + " = " + tilesetIdx + " r"+r+"g"+g+"b"+b)
 
-          // couldnt determine tileset index, so just copy the one from the left
-          tilesetIdx = chunk.data[chunk.data.length - 1]
+          if (tileX == 0) {
+            // look up
+            if (tileY != 0) {
+              tilesetIdx = baseLayer.getTileData(tileX, tileY - 1)
+            }
+          } else {
+            // look left
+            tilesetIdx = baseLayer.getTileData(tileX - 1, tileY)
+          }
+
+          if (tilesetIdx == 0 || tilesetIdx == undefined) {
+            console.log("wat")
+          }
         }
 
         chunk.data.push(tilesetIdx)
 
-
-        
         //zzz todo: calculate transition overlay layer from known existing tiles (eg: up, left, and up+left) to place on upper layer
       }
-      baseLayer.chunks.push(chunk)
     }
-    file.layers.push(baseLayer)
 
     return file
   }
