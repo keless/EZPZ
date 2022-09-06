@@ -224,7 +224,6 @@ class TerrainGenerator {
       }
     }
 
-    //zzz test
     this.roadRunner(this.roads)
 
     let jsonObject = this.toTiledJson()
@@ -508,7 +507,9 @@ class TerrainGenerator {
     node.shouldCache = true
     node.size.setVal(this.regionWidth, this.regionHeight);
     node.addCustomDraw((g, x,y, ct) => {
-      this.Draw(g, x, y, ct, false, false, false, false) //zzz true, true, true, true)
+      //zzz this.Draw(g, x, y, ct, true, true, true, true)
+      // for now, draw the same way we calculate the tileset
+      this.Draw(g, x, y, ct, false, false, false, false)
     })
 
     node.setClick((e, x, y)=> {
@@ -682,8 +683,6 @@ class TerrainGenerator {
     g.ctx.imageSmoothingEnabled = false
     this.Draw(g, 0, 0, 0, false, false, false, false)
     g.drawCentered = saveCentered
-    //zzz g.ctx.imageSmoothingEnabled = saveAntialiased
-    
     
     // imgData is a 1D array of r, g, b, a, pixel value sets
     // the location of 'r' of pixel at (0, 1) is imgData[ (0 + 1*imgDataStep) + 0]
@@ -736,11 +735,18 @@ class TerrainGenerator {
         // look up the color to find the tile index
         //let color = "rgb("+r+", "+g+", "+b+")"
         let tilesetIdx = this._rgbToTilesetIndex(r, g, b)
+
+        //zzz TODO: what about when its the first pixel of the current chunk??
+        if (tilesetIdx == 0 && chunk.data.length > 0) {
+          console.log("begin tile " + tileIdx + " @ " + tileX + "," + tileY + " = " + tilesetIdx + " r"+r+"g"+g+"b"+b)
+
+          // couldnt determine tileset index, so just copy the one from the left
+          tilesetIdx = chunk.data[chunk.data.length - 1]
+        }
+
         chunk.data.push(tilesetIdx)
 
-        if (tilesetIdx == 0) {
-          console.log("begin tile " + tileIdx + " @ " + tileX + "," + tileY + " = " + tilesetIdx + " r"+r+"g"+g+"b"+b)
-        }
+
         
         //zzz todo: calculate transition overlay layer from known existing tiles (eg: up, left, and up+left) to place on upper layer
       }
