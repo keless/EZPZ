@@ -47,6 +47,13 @@ class TerrainGenerator {
     this.grassColor = "rgb(0, 250, 0)"
     this.roadColor = "rgb(133, 42, 42)"
     this.cityColor = "rgb(250, 250, 250)"
+
+    this.colorSet = [
+      [0, 0, 250], // sea
+      [0, 250, 0], // grass
+      [133, 42, 42], // road
+      [250, 250, 250], // city
+    ]
   }
 
   generate() {
@@ -390,44 +397,46 @@ class TerrainGenerator {
         // stroke and fill faction color
         let cellIndex = poi.cellIndex
         let factionIndex = this.vornoiCellToFactionMap[cellIndex]
-        g.ctx.strokeStyle = "rgb(0,0,0)"
+        let strokeStyle = "rgb(0,0,0)"
         g.ctx.lineWidth = 2
         let fillStyle = this.factionColors[factionIndex]
         if (!showFactionColors) {
           fillStyle = this.grassColor
+          strokeStyle = this.grassColor
         }
         g.ctx.fillStyle = fillStyle
+        g.ctx.strokeStyle = strokeStyle
         g.ctx.beginPath()
         this.allVoronoi.renderCell(cellIndex, g.ctx)
         g.ctx.fill()
-
-        if (showCellOutlines) {
-          g.ctx.stroke()
-        }
+        g.ctx.stroke()
         
-
         // draw circle if capital or city
-        if (poi.type != "Wilds") {
-          // default (village)
-          let fillStyle = "rgb(150, 150, 150)" //this.factionColors[poi.factionIndex]
-          let strokeStyle = "rgb(0, 0, 0)"
-          let strokeWidth = 2
-          let radius = 3
-          if (poi.type == "City") {
-            radius = 5
-            fillStyle = "rgb(0, 0, 0)"
-          } else if (poi.type == "Capital") {
-            radius = 10
-            fillStyle = "rgb(255, 255, 255)"
+        if (showFactionColors) {
+          // dont render these to base map (should do a second higher-layer path?)
+          if (poi.type != "Wilds") {
+            // default (village)
+            let fillStyle = "rgb(150, 150, 150)" //this.factionColors[poi.factionIndex]
+            let strokeStyle = "rgb(0, 0, 0)"
+            let strokeWidth = 2
+            let radius = 3
+            if (poi.type == "City") {
+              radius = 5
+              fillStyle = "rgb(0, 0, 0)"
+            } else if (poi.type == "Capital") {
+              radius = 10
+              fillStyle = "rgb(255, 255, 255)"
+            }
+            if (!showCellOutlines) {
+              strokeStyle = ""
+            }
+            if (!showFactionColors) {
+              fillStyle = this.cityColor
+            }
+            g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
           }
-          if (!showCellOutlines) {
-            strokeStyle = ""
-          }
-          if (!showFactionColors) {
-            fillStyle = this.cityColor
-          }
-          g.drawCircleEx(poi.pos.x, poi.pos.y, radius, fillStyle, strokeStyle, strokeWidth)
         }
+
 
         /* draw roads (normal line)
         for (let road of this.roads) {
@@ -499,7 +508,7 @@ class TerrainGenerator {
     node.shouldCache = true
     node.size.setVal(this.regionWidth, this.regionHeight);
     node.addCustomDraw((g, x,y, ct) => {
-      this.Draw(g, x, y, ct, true, true, true, true)
+      this.Draw(g, x, y, ct, false, false, false, false) //zzz true, true, true, true)
     })
 
     node.setClick((e, x, y)=> {
@@ -667,10 +676,13 @@ class TerrainGenerator {
     let g = Service.Get("gfx")
     // make sure we're rendered correctly
 
+    let saveAntialiased = g.ctx.imageSmoothingEnabled
     let saveCentered = g.drawCentered
     g.drawCentered = false
+    g.ctx.imageSmoothingEnabled = false
     this.Draw(g, 0, 0, 0, false, false, false, false)
     g.drawCentered = saveCentered
+    //zzz g.ctx.imageSmoothingEnabled = saveAntialiased
     
     
     // imgData is a 1D array of r, g, b, a, pixel value sets
@@ -722,12 +734,14 @@ class TerrainGenerator {
         //let a = imgData[pixelDataStartIndex + 3]
 
         // look up the color to find the tile index
-        let color = "rgb("+r+", "+g+", "+b+")"
-        let tilesetIdx = this._rgbaToTileSetIndex(color)
+        //let color = "rgb("+r+", "+g+", "+b+")"
+        let tilesetIdx = this._rgbToTilesetIndex(r, g, b)
         chunk.data.push(tilesetIdx)
 
-        console.log("begin tile " + tileIdx + " @ " + tileX + "," + tileY + " = " + tilesetIdx)
-
+        if (tilesetIdx == 0) {
+          console.log("begin tile " + tileIdx + " @ " + tileX + "," + tileY + " = " + tilesetIdx + " r"+r+"g"+g+"b"+b)
+        }
+        
         //zzz todo: calculate transition overlay layer from known existing tiles (eg: up, left, and up+left) to place on upper layer
       }
       baseLayer.chunks.push(chunk)
@@ -737,21 +751,73 @@ class TerrainGenerator {
     return file
   }
 
+  // r,g,b,a: Int - numbers between 0 and 255
+  // returns Int - tileset index of corresponding tile
+  _rgbToTilesetIndex(r, g, b) {
+    for (let i=0; i< this.colorSet.length; i++) {
+      if (this._colorNearMatch(r,g,b, 30, i)) {
+        return this._colorsetIndexToTilesetIndex(i)
+      }
+    }
+
+    return 0
+  }
+
   // Hardcoded lookup table from our color constants to the tileset index
-  _rgbaToTileSetIndex(colorKey) {
+  // colorkey: String - ex: "rgb(250, 250, 250)"
+  // returns Int - tileset index of corresponding tile
+  _colorkeyToTileSetIndex(colorKey) {
     switch(colorKey) {
       case this.seaColor:
-        return 123 + 1
-      case this.roadColor:
-        return 64 + 1
-      case this.cityColor:
-        return 334 + 1
+        return this._colorsetIndexToTilesetIndex(0)
       case this.grassColor:
-        return 190 + 1
+        return this._colorsetIndexToTilesetIndex(1)
+      case this.roadColor:
+        return this._colorsetIndexToTilesetIndex(2)
+      case this.cityColor:
+        return this._colorsetIndexToTilesetIndex(3)
       default:
         return 0
     }
   }
+
+  // given an index (relative to self.colorset) return the corresponding tileset index
+  _colorsetIndexToTilesetIndex(colorIndex) {
+    switch(colorIndex) {
+      case 0: //sea
+        return 123 + 1
+      case 1: // grass
+        return 190 + 1
+      case 2: // road
+        return 64 + 1
+      case 3: // city
+        return 334 + 1
+      default:
+        return 0
+    }
+  }
+
+  _colorNearMatch(r, g, b, tolerance, colorSetIndex) {
+    let colorSet = this.colorSet[colorSetIndex]
+    let r2 = colorSet[0]
+    let g2 = colorSet[1]
+    let b2 = colorSet[2]
+
+
+    let totalTolerance = tolerance * 3
+    let deltaR = Math.abs(r - r2)
+    let deltaG = Math.abs(g - g2)
+    let deltaB = Math.abs(b - b2)
+    return (deltaR + deltaG + deltaB) < totalTolerance
+
+    /*
+    if (r < (r2 - tolerance) || (r > r2 + tolerance)) { return false }
+    if (g < (g2 - tolerance) || (g > g2 + tolerance)) { return false }
+    if (b < (b2 - tolerance) || (b > b2 + tolerance)) { return false }
+    return true
+    */
+  }
+
 }
  
 class POI {
