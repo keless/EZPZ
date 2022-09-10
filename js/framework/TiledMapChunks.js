@@ -81,7 +81,6 @@ class TiledMapExporter {
 
         chunk.data.push(tilesetIdx)
 
-        //zzz todo: calculate transition overlay layer from known existing tiles (eg: up, left, and up+left) to place on upper layer
       }
 
       progressReportFn( c / (numChunks*2))
@@ -90,6 +89,8 @@ class TiledMapExporter {
     let transitionTileLayer = new TiledLayerJsonFileFormat()
     transitionTileLayer.name = "Transition Tile Layer"
     file.layers.push(transitionTileLayer)
+
+    let undefinedTransitions = {}
 
     for(let c=0; c< numChunks; c++) {
       let chunkX = c % numChunksW
@@ -152,10 +153,20 @@ class TiledMapExporter {
         let neighborMap = [northWest, north, northEast, west, currentTileIdx, east, southWest, south, southEast]
 
         let transitionTileIdx = this._getTransitionTile(neighborMap)
+
+        if (transitionTileIdx == undefined) {
+          undefinedTransitions[ neighborMap.join(",") ] = true
+          transitionTileIdx = 0
+        }
+
         chunk.data.push(transitionTileIdx)
       }
 
       progressReportFn( (c + numChunks) / (numChunks*2))
+    }
+
+    for(let key in undefinedTransitions) {
+      console.log("no map for " + key)
     }
 
     return file
@@ -208,7 +219,162 @@ class TiledMapExporter {
   // neighborMap: [Int] - 3x3 (1dimensional) array of neighbors' (and self at idx=4) tile set index
   // returns Int - tileset index for transitional tile overlay layer (or 0 if no tile)
   static _getTransitionTile(neighborMap) {
-    return 0
+
+    let key = neighborMap.join(",")
+    switch(key) {
+      // grass over water
+      case "191,191,191,124,191,191,191,191,191":
+      case "191,191,124,191,191,191,191,191,191":
+      case "124,191,191,191,191,191,191,191,191":
+      case "191,191,191,191,191,191,191,191,124":
+      case "191,191,191,191,191,191,191,124,124":
+      case "191,191,124,191,191,124,191,124,124":
+      case "124,124,191,124,191,191,191,191,191":
+      case "191,191,191,191,191,124,124,124,124":
+        return 0 // grass, no transition to water
+
+      case "124,124,191,124,124,191,191,191,191":
+      case "124,124,124,124,124,191,191,191,191":
+      case "124,124,124,124,124,191,124,191,191":
+      case "124,124,191,124,124,191,124,191,191": 
+        return 150 // grass over water (nw corner)
+        
+      case "191,124,124,191,124,124,191,191,191":
+      case "191,124,124,191,124,124,191,191,124":
+      case "124,124,124,191,124,124,191,191,124":
+      case "124,124,124,191,124,124,191,191,191": 
+        return 149  // grass over water (ne corner)
+
+      case "191,191,191,124,124,191,124,124,124":
+      case "124,191,191,124,124,191,124,124,124":
+      case "124,191,191,124,124,191,124,124,191":
+      case "191,191,191,124,124,191,124,124,191":
+        return 129 // grass over water (sw corner)
+
+      case "191,191,124,191,124,124,124,124,124":
+      case "191,191,124,191,124,124,191,124,124":
+      case "191,191,191,191,124,124,124,124,124":
+      case "191,191,191,191,124,124,191,124,124": 
+        return 128 // grass over water (se corner)
+
+
+      case "124,124,124,124,124,124,124,124,191": return 169 // grass over water (nw edge)
+
+      case "124,124,124,124,124,124,191,124,124": return 171 // grass over water (ne edge)
+        
+      case "124,124,191,124,124,124,124,124,124": return 211 // grass over water (sw edge)
+
+      case "191,124,124,124,124,124,124,124,124": return 213 // grass over water (se edge)
+      
+      case "124,124,124,124,124,124,191,191,191":
+      case "124,124,124,124,124,124,191,191,124":
+      case "124,124,124,124,124,124,124,191,191":
+      case "124,124,124,124,124,124,124,191,124":
+        return 170 // grass into water (n edge)
+
+        case "191,124,124,124,124,124,191,124,124": // special fill edge
+      case "124,124,124,191,124,124,124,124,124":
+      case "191,124,124,191,124,124,124,124,124":
+      case "124,124,124,191,124,124,191,124,124":
+      case "191,124,124,191,124,124,191,124,124":
+        return 192 // grass into water (e edge)
+
+      case "191,191,124,124,124,124,124,124,124":
+      case "191,191,191,124,124,124,124,124,124":
+      case "124,191,124,124,124,124,124,124,124":
+      case "124,191,191,124,124,124,124,124,124":
+        return 212 // grass into water (s edge)
+
+      case "124,124,124,124,124,191,124,124,124":
+      case "124,124,124,124,124,191,124,124,191":
+      case "124,124,191,124,124,191,124,124,191":
+      case "124,124,191,124,124,191,124,124,124":
+        return 190 // grass over water (w edge)
+
+      case "191,191,124,191,124,124,191,191,124":
+        return 232 //special fill
+
+
+      // road over grass
+
+      case "191,65,65,191,65,65,191,191,65": return 0 // road, no transition to grass
+
+      case "191,191,65,191,191,65,65,191,65": //special fill
+      case "191,191,191,191,191,65,65,191,65": //special fill
+      case "191,191,191,191,191,65,65,65,65": 
+      case "191,191,65,191,191,65,65,65,65": 
+      case "191,191,191,191,191,65,191,65,65": 
+      case "191,191,65,191,191,65,191,65,65": 
+        return 24 // road into grass (nw corner)
+
+      case "65,191,191,65,191,191,65,191,65": //special fill
+      case "65,191,191,65,191,191,65,65,65":
+      case "191,191,191,65,191,191,65,65,191":
+      case "191,191,191,65,191,191,65,65,65":
+      case "65,191,191,65,191,191,65,65,191":
+        return 23 // road into grass (ne corner)
+
+      case "65,65,65,191,191,65,191,191,65":
+      case "191,65,65,191,191,65,191,191,191":
+      case "65,65,65,191,191,65,191,191,191":
+      case "191,65,65,191,191,65,191,191,65":
+        return 3 // road into grass (sw corner)
+
+      case "65,65,65,65,191,191,65,191,191":
+      case "65,65,191,65,191,191,191,191,191":
+      case "65,65,65,65,191,191,191,191,191":
+      case "65,65,191,65,191,191,65,191,191":
+        return 2 // road into grass (se corner)
+
+
+      case "191,191,191,191,191,191,191,191,65": return 43 // road into grass (nw edge)
+
+      case "191,191,191,191,191,191,65,191,191": return 45 // road into grass (ne edge)
+
+      case "191,191,65,191,191,191,191,191,191": return 85 // road into grass (sw edge)
+
+      case "65,191,191,191,191,191,191,191,191": return 87 // road into grass (se edge)
+
+      case "191,191,191,191,191,191,65,65,65":
+      case "191,191,191,191,191,191,191,65,65":
+      case "191,191,191,191,191,191,65,65,191":
+      case "191,191,191,191,191,191,191,65,191": 
+        return 44 // road into grass (n edge)
+
+      case "191,191,191,65,191,191,65,191,191":
+      case "65,191,191,65,191,191,191,191,191":
+      case "65,191,191,65,191,191,65,191,191":
+      case "191,191,191,65,191,191,191,191,191":
+        return 66 // road into grass (e edge)
+
+      case "65,65,65,191,191,191,191,191,191":
+      case "191,65,65,191,191,191,191,191,191":
+      case "65,65,191,191,191,191,191,191,191":
+      case "191,65,191,191,191,191,191,191,191": 
+        return 86 // road into grass (s edge)
+
+      case "191,191,65,191,191,191,191,191,65": //special fill
+      case "191,191,191,191,191,65,191,191,191":
+      case "191,191,65,191,191,65,191,191,191":
+      case "191,191,65,191,191,65,191,191,65":
+      case "191,191,191,191,191,65,191,191,65": 
+        return 64 // road into grass (w edge)
+
+      case "191,191,191,65,191,65,65,65,65":
+      case "191,191,65,65,191,65,65,65,65":
+      case "65,191,191,65,191,65,65,65,65":
+      case "191,65,65,191,191,65,191,65,65":
+        return 108 // special fill road
+
+
+      // No transition:
+      case "124,124,124,124,124,124,124,124,124": // all ocean
+      case "191,191,191,191,191,191,191,191,191": // all grass
+      case "65,65,65,65,65,65,65,65,65": // all dirt road
+        return 0
+      default:
+        return undefined
+    }
   }
 }
 

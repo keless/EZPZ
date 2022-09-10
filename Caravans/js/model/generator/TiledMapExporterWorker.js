@@ -20,23 +20,24 @@ self.onmessage = (e) => {
       let regionHeight = workerData.regionHeight
       let colorSet = workerData.colorSet
 
-    postMessage({task: "echo", echo: "TiledMapExporterWorker - begin export with imageData of size " + regionWidth + " by " + regionHeight + " and " + colorSet.length + " colorSets" })
+      //postMessage({task: "echo", echo: "TiledMapExporterWorker - begin export with imageData of size " + regionWidth + " by " + regionHeight + " and " + colorSet.length + " colorSets" })
 
       let lastProgress = 0
-      //console.log("TiledMapExporterWorker - begin export with imageData of size " + regionWidth + " by " + regionHeight + " and " + colorSet.length + " colorSets")
+      console.log("TiledMapExporterWorker - begin export with imageData of size " + regionWidth + " by " + regionHeight + " and " + colorSet.length + " colorSets")
+      console.time("Worker")
       let file = TiledMapExporter.export(imageData, regionWidth, regionHeight, colorSet, (progressValue)=> {
 
-        if (progressValue > (lastProgress + 0.01)) {
+        if (progressValue > (lastProgress + 0.05)) {
           postMessage({task: "progress", progress: progressValue})
           lastProgress = progressValue
         }
       })
 
       console.log("TiledMapExporterWorker - finished export, returning result " + file)
+      console.timeEnd("Worker")
+
       postMessage({task: "export", result: file })
-
       break;
-
 
     default:
 
