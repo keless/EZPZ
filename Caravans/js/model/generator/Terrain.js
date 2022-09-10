@@ -43,17 +43,17 @@ class TerrainGenerator {
     this.searchPathStart = null
     this.searchPath = []
 
-    this.seaColor = "rgb(0, 0, 250)"
-    this.grassColor = "rgb(0, 250, 0)"
-    this.roadColor = "rgb(133, 42, 42)"
-    this.cityColor = "rgb(250, 250, 250)"
-
     this.colorSet = [
       [0, 0, 250], // sea
       [0, 250, 0], // grass
       [133, 42, 42], // road
       [250, 250, 250], // city
     ]
+
+    this.seaColor = "rgb("+this.colorSet[0][0]+", "+this.colorSet[0][1]+", "+this.colorSet[0][2]+")"
+    this.grassColor = "rgb("+this.colorSet[1][0]+", "+this.colorSet[1][1]+", "+this.colorSet[1][2]+")"
+    this.roadColor = "rgb("+this.colorSet[2][0]+", "+this.colorSet[2][1]+", "+this.colorSet[2][2]+")"
+    this.cityColor = "rgb("+this.colorSet[3][0]+", "+this.colorSet[3][1]+", "+this.colorSet[3][2]+")"
   }
 
   generate() {
@@ -226,9 +226,16 @@ class TerrainGenerator {
 
     this.roadRunner(this.roads)
 
+    this.toTiledJson()
+    /*
     let jsonObject = this.toTiledJson()
-    let fileJson = JSON.stringify(jsonObject, null, " ")
-    this.downloadFile(fileJson, "generatedMap.json")
+    if (jsonObject != undefined) {
+      let fileJson = JSON.stringify(jsonObject, null, " ")
+      this.downloadFile(fileJson, "generatedMap.json")
+    } else {
+      console.error("failed to export to tiledJson format")
+    }*/
+
   }
 
   downloadFile(text, filename = 'untitled.dat') {
@@ -660,179 +667,61 @@ class TerrainGenerator {
   }
 
   // Tiled support
-  // returns a json object that represents the terrain as a Tiled format
+  // calls into a background Worker to export to tiled map file
+  // results in a callback that will download the generated output as a .json file
+  //zzz returns a json object that represents the terrain as a Tiled format
   toTiledJson() {
-    let file = new TiledJsonFileFormat()
 
-    // how many tiles one pixel from the terrain represents
-    let scaleFactor = 1
-    file.height = this.regionHeight * scaleFactor
-    file.width = this.regionWidth * scaleFactor
-
-    // just use default
-    let tileset = new TiledTilesetJsonFileFormat()
-    file.tilesets.push(tileset)
 
     // Layer1 - base terrain without details
     let g = Service.Get("gfx")
     // make sure we're rendered correctly
-
-    let saveAntialiased = g.ctx.imageSmoothingEnabled
     let saveCentered = g.drawCentered
     g.drawCentered = false
     g.ctx.imageSmoothingEnabled = false
     this.Draw(g, 0, 0, 0, false, false, false, false)
     g.drawCentered = saveCentered
-    
+
     // imgData is a 1D array of r, g, b, a, pixel value sets
     // the location of 'r' of pixel at (0, 1) is imgData[ (0 + 1*imgDataStep) + 0]
     // the location of 'b' of pixel at (10, 0) is imgData[ (10*pixelStep + 0) + 2]
     // eg: colorIndex of pixel at (x, y) = imgData[ (x*pixelStep + y*imgDataStep) + colorIndex]
     let imgData = g.ctx.getImageData(0,0, this.regionWidth, this.regionHeight).data
-    let pixelStep = 4 //rgba
-    let imgDataStep = this.regionWidth * pixelStep
 
-    let chunkSize = TiledChunkJsonFileFormat.chunkSize
+    let worker = new Worker("./Caravans/js/model/generator/TiledMapExporterWorker.js")
 
-    file.width = Math.ceil(this.regionWidth / file.tileheight)
-    file.height = Math.ceil(this.regionHeight / file.tilewidth)
-    let numChunksW = Math.ceil(this.regionWidth / chunkSize)
-    let numChunksH = Math.ceil(this.regionHeight / chunkSize)
-    let numChunks = numChunksW * numChunksH
+    //let jsonObject = TiledMapExporter.export(imgData, this.regionWidth, this.regionHeight, this.colorSet)
+    worker.onmessage = (e) => {
+      //console.log("on message " + e.data)
 
-    //let chunkStep = numChunksW * chunkSize
+      let workerData = e.data
+      switch(workerData.task) {
+        case "echo":
+          console.log(workerData.echo)
+          break;
+        case "progress":
+          console.log("export progress " + (100 * workerData.progress) + "%")
+          break; 
+        case "export":
+          console.log("got worker export output, download as file")
+          let fileObject = e.data.result
+          let fileJson = JSON.stringify(fileObject, null, " ")
+          this.downloadFile(fileJson, "generatedMap.json")
 
-    // Fill base layer
-    let baseLayer = new TiledLayerJsonFileFormat()
-    file.layers.push(baseLayer)
-    for(let c=0; c< numChunks; c++) {
-      let chunkX = c % numChunksW
-      let chunkY = Math.floor(c / numChunksW)
+          worker.terminate()
+        break;
 
-      let chunk = new TiledChunkJsonFileFormat()
-      baseLayer.chunks.push(chunk)
-      chunk.x = chunkX * chunkSize
-      chunk.y = chunkY * chunkSize
-
-      console.log("begin chunk " + c + "["+chunkX+","+chunkY+"] @ " + chunk.x + "," + chunk.y)
-
-      let numTiles = chunkSize * chunkSize
-
-      let tileOffsetX = chunk.x 
-      let tileOffsetY = chunk.y
-      for(let tileIdx=0; tileIdx < numTiles; tileIdx++) {
-        let tileX = tileOffsetX + (tileIdx % chunkSize)
-        let tileY = tileOffsetY + Math.floor(tileIdx / chunkSize)
-
-        
-        
-        //remember that one pixel of source image == one tile at destination
-        let pixelDataStartIndex = (tileX * pixelStep) + (tileY * imgDataStep)
-
-        let r = imgData[pixelDataStartIndex + 0]
-        let g = imgData[pixelDataStartIndex + 1]
-        let b = imgData[pixelDataStartIndex + 2]
-        //let a = imgData[pixelDataStartIndex + 3]
-
-        // look up the color to find the tile index
-        //let color = "rgb("+r+", "+g+", "+b+")"
-        let tilesetIdx = this._rgbToTilesetIndex(r, g, b)
-
-        //zzz TODO: what about when its the first pixel of the current chunk?? or if its a different row?!
-        if (tilesetIdx == 0) {
-          console.log("begin tile " + tileIdx + " @ " + tileX + "," + tileY + " = " + tilesetIdx + " r"+r+"g"+g+"b"+b)
-
-          if (tileX == 0) {
-            // look up
-            if (tileY != 0) {
-              tilesetIdx = baseLayer.getTileData(tileX, tileY - 1)
-            }
-          } else {
-            // look left
-            tilesetIdx = baseLayer.getTileData(tileX - 1, tileY)
-          }
-
-          if (tilesetIdx == 0 || tilesetIdx == undefined) {
-            console.log("wat")
-          }
-        }
-
-        chunk.data.push(tilesetIdx)
-
-        //zzz todo: calculate transition overlay layer from known existing tiles (eg: up, left, and up+left) to place on upper layer
+        default:
+          // dont have any other use cases so if this manages to happen it should also terminate
+          worker.terminate()
       }
     }
 
-    return file
+    // Send data.buffer because it is a ArrayBuffer and can be transfered to the Worker quickly
+    worker.postMessage({task: "export", imageData: imgData.buffer, regionWidth: this.regionWidth, regionHeight:this.regionHeight, colorSet: this.colorSet })
+
+    //return file
   }
-
-  // r,g,b,a: Int - numbers between 0 and 255
-  // returns Int - tileset index of corresponding tile
-  _rgbToTilesetIndex(r, g, b) {
-    for (let i=0; i< this.colorSet.length; i++) {
-      if (this._colorNearMatch(r,g,b, 30, i)) {
-        return this._colorsetIndexToTilesetIndex(i)
-      }
-    }
-
-    return 0
-  }
-
-  // Hardcoded lookup table from our color constants to the tileset index
-  // colorkey: String - ex: "rgb(250, 250, 250)"
-  // returns Int - tileset index of corresponding tile
-  _colorkeyToTileSetIndex(colorKey) {
-    switch(colorKey) {
-      case this.seaColor:
-        return this._colorsetIndexToTilesetIndex(0)
-      case this.grassColor:
-        return this._colorsetIndexToTilesetIndex(1)
-      case this.roadColor:
-        return this._colorsetIndexToTilesetIndex(2)
-      case this.cityColor:
-        return this._colorsetIndexToTilesetIndex(3)
-      default:
-        return 0
-    }
-  }
-
-  // given an index (relative to self.colorset) return the corresponding tileset index
-  _colorsetIndexToTilesetIndex(colorIndex) {
-    switch(colorIndex) {
-      case 0: //sea
-        return 123 + 1
-      case 1: // grass
-        return 190 + 1
-      case 2: // road
-        return 64 + 1
-      case 3: // city
-        return 334 + 1
-      default:
-        return 0
-    }
-  }
-
-  _colorNearMatch(r, g, b, tolerance, colorSetIndex) {
-    let colorSet = this.colorSet[colorSetIndex]
-    let r2 = colorSet[0]
-    let g2 = colorSet[1]
-    let b2 = colorSet[2]
-
-
-    let totalTolerance = tolerance * 3
-    let deltaR = Math.abs(r - r2)
-    let deltaG = Math.abs(g - g2)
-    let deltaB = Math.abs(b - b2)
-    return (deltaR + deltaG + deltaB) < totalTolerance
-
-    /*
-    if (r < (r2 - tolerance) || (r > r2 + tolerance)) { return false }
-    if (g < (g2 - tolerance) || (g > g2 + tolerance)) { return false }
-    if (b < (b2 - tolerance) || (b > b2 + tolerance)) { return false }
-    return true
-    */
-  }
-
 }
  
 class POI {
