@@ -1,0 +1,6 @@
+{
+	"image":"btn_white_sm.png",
+	"width":48,
+	"height":42,
+	"frames":[[0,0,48,42], [0,42,48,42]]
+}

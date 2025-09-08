@@ -17,6 +17,7 @@ var game_create = function()
     RP.baseURL = "StarForge/"
 	
 	var stateController = Service.Get("state");
+    stateController.addState("loading", LoadingState);
 	stateController.addState("forgeEditor", StarForgeEditorState);
 	//stateController.addState("menu", MenuState);
 	//stateController.addState("battle", BattleState);
@@ -25,7 +26,6 @@ var game_create = function()
 			"gfx/btn_blue.sprite",
 			"gfx/btn_dark.sprite",
 			"gfx/btn_white.sprite",
-			"gfx/aelius_floor.jpg",
 			"gfx/explosion_1.sprite"
 			];
 	stateController.gotoState("loading", [resources, "forgeEditor"]);

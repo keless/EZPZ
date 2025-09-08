@@ -1,0 +1,6 @@
+{
+	"image":"btn_white.png",
+	"width":145,
+	"height":42,
+	"frames":[[0,0,145,42], [0,42,145,42]]
+}

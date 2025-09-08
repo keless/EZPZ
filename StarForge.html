@@ -29,15 +29,15 @@
     
     <!-- game code -->
         <!-- model -->
-    <script type="text/javascript" src="CastQuest/js/model/StarForgeModule.js"></script>
+    <script type="text/javascript" src="StarForge/js/model/StarForgeModel.js"></script>
         <!-- view -->
-    <script type="text/javascript" src="CastQuest/js/view/StarForgeEditorView.js"></script>
+    <script type="text/javascript" src="StarForge/js/view/StarForgeEditorView.js"></script>
 
         <!-- controller -->
-    <script type="text/javascript" src="CastQuest/js/controller/StarForgeEditorState.js"></script>
+    <script type="text/javascript" src="StarForge/js/controller/StarForgeEditorState.js"></script>
 
 
-    <script type="text/javascript" src="CastQuest/js/main.js"></script>
+    <script type="text/javascript" src="StarForge/js/main.js"></script>
 
     <script type="text/javascript">
         document.addEventListener( "DOMContentLoaded", function() {
@@ -45,5 +45,16 @@
              game_create();
         }, false );
     </script>
-    </head>
-    </html>
+</head>
+
+<body>
+<center>
+<canvas id="content" width="1024" height="800" style="border:1px solid #000000;" tabindex="1"></canvas>
+</center>
+
+
+<hr>
+<a href="todo.txt" target="_window">Dev Log</a>
+</body>
+
+</html>

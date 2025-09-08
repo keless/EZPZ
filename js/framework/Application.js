@@ -105,9 +105,11 @@ class Application {
 		var stateController = Service.Get("state");
 		var state = stateController.currentState;
 		
+		if (state == null) { return; }
+
 		var ct = Date.now(); 
 		ct /= 1000.0; //convert to seconds
-  	var dt = Math.abs(ct - this.lastUpdateTick);
+  		var dt = Math.abs(ct - this.lastUpdateTick);
 		this.lastUpdateTick = ct;
 
 		this.elapsedTime += dt;

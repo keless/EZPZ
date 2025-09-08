@@ -12,7 +12,7 @@ class NodeView extends BaseListener {
 		this.size = new Vec2D();
 		this.rotation = 0;
 		this.scale = 1;
-    this._visible = true;
+    	this._visible = true;
 
 		this.pUser = null;
 
