@@ -19,6 +19,10 @@ class StarForgeEditorStateModel extends BaseStateModel {
 		this.pState = state;
 
         this.starForgeModel = new StarForgeModel()
+
+		this.SetListener("starForgeEditorModuleClicked", (e)=>{
+			this.changeStarForgeModule(e.moduleIndex)
+		})
     }
 
     Destroy() {
@@ -50,6 +54,25 @@ class StarForgeEditorStateModel extends BaseStateModel {
 	}
 
 
+	changeStarForgeModule(index) {
+		if (index < 0 || index >= this.starForgeModel.modules.length) {
+			console.error(`invalid index for module index ${index}`)
+			return
+		}
+
+		var module = this.starForgeModel.modules[index]
+		if (module.type >= StarForgeModel.TYPE_PIPE_LR && module.type <= StarForgeModel.TYPE_PIPE_RUD ) {
+			// Module is a pipe, rotate through the different pipe types
+			var newType = (module.type + 1)
+			if (newType > StarForgeModel.TYPE_PIPE_RUD) {
+				// wrap the pipe type if it went out of bounds
+				newType = StarForgeModel.TYPE_PIPE_LR
+			}
+			module.type = newType
+
+			EventBus.ui.dispatch({ evtName: "starForgeModelUpdated", moduleIndex: index })
+		}
+	}
 }
 
 
