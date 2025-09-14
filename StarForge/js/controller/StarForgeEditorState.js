@@ -18,10 +18,20 @@ class StarForgeEditorStateModel extends BaseStateModel {
 		
 		this.pState = state;
 
-        this.starForgeModel = new StarForgeModel()
+
+        // TODO: load json from somewhere if we're continuing
+        var json = null
+
+        this.starForgeModel = new StarForgeModel(json)
 
 		this.SetListener("starForgeEditorModuleClicked", (e)=>{
-			this.changeStarForgeModule(e.moduleIndex)
+            if (e.mouseBtn == 0) { 
+                // left mouse button
+                this.rotateStarForgePipeModule(e.moduleIndex)
+            } else if (e.mouseBtn == 2) {
+                // right mouse button
+                this.changeStarForgeModule(e.moduleIndex)
+            }
 		})
     }
 
@@ -53,8 +63,39 @@ class StarForgeEditorStateModel extends BaseStateModel {
         */
 	}
 
+    // index into the modules array of the module to be changed
+    changeStarForgeModule(index) {
+        if (index < 0 || index >= this.starForgeModel.modules.length) {
+			console.error(`invalid index for module index ${index}`)
+			return
+		}
 
-	changeStarForgeModule(index) {
+        var didChange = false;
+        var module = this.starForgeModel.modules[index]
+        if (module.type >= StarForgeModel.TYPE_PIPE_LR && module.type <= StarForgeModel.TYPE_PIPE_RUD ) {
+            // replace pipe with empty
+            module.type = StarForgeModel.TYPE_EMPTY
+            didChange = true
+        } else {
+            // get the index of the forge (so we can enforce there is only ever one forge)
+            var forgeIndex = this.starForgeModel.findNodeType(StarForgeModel.TYPE_FORGE);
+
+            module.type = module.type + 1
+
+            if (module.type == StarForgeModel.TYPE_FORGE && (forgeIndex != -1 && forgeIndex != index)) {
+                // we've just created a second forge module; bump the type one more
+                module.type = module.type + 1
+            }
+            didChange = true
+        }
+
+        if (didChange) {
+            EventBus.ui.dispatch({ evtName: "starForgeModelUpdated", moduleIndex: index })
+        }
+    }
+
+    // index into the modules array of the module to be rotated; must be a pipe
+	rotateStarForgePipeModule(index) {
 		if (index < 0 || index >= this.starForgeModel.modules.length) {
 			console.error(`invalid index for module index ${index}`)
 			return

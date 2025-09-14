@@ -1,11 +1,8 @@
 
+
+// Represents an individual module in the StarForgeEditor grid
 class StarForgeModuleModel 
 {
-    /*
-        types:
-        0 = testing,
-        1 = star forge,
-    */
     constructor(type) {
         this.type = type
     }
@@ -25,12 +22,27 @@ class StarForgeModel
     static get TYPE_PIPE_LUD() { return 8 }
     static get TYPE_PIPE_RUD() { return 9 }
 
-    constructor() {
+    constructor(json) {
 
+        this.gridW = 0
+        this.gridH = 0
+
+        this.inputs = []
+
+        this.modules = []
+
+        if (json == null) {
+            this.loadDefault()
+        } else {
+            this.loadJson(json)
+        }
+
+    }
+
+    loadDefault() {
         this.gridW = 10
         this.gridH = 10
 
-        this.modules = []
         for(var y=0; y<this.gridH; y++) {
             for(var x=0; x<this.gridW; x++) {
                 this.modules.push(new StarForgeModuleModel( StarForgeModel.TYPE_EMPTY ))
@@ -48,15 +60,66 @@ class StarForgeModel
     }
 
 
-    // Returns index (into the modules array) of the node that has the StarForge module in it, or -1 if not found
-    // Assumes there is only ONE StarForge node
-    findForgeNode() {
+    static get FILE_FORMAT_VERSION() { return 1 }
+
+    loadJson(json) {
+        //deserialize
+
+        if (json.version != StarForgeModel.FILE_FORMAT_VERSION) {
+            console.error("incompatible StarForgeModel file format version; load default")
+            this.loadDefault()
+            return
+        }
+
+        this.gridW = json.gridW
+        this.gridH = json.gridH
+
+        const jsonModulesLength = json.modules.length
+        if (jsonModulesLength != this.gridW * this.gridH) {
+            console.error("modules length "+ jsonModulesLength +"is not the correct size for "+ this.gridW +" * "+ this.gridH)
+            this.loadDefault()
+            return
+        }
+
+        for (moduleType in json.modules) {
+            this.modules.push(new StarForgeModuleModel( moduleType ))
+        }
+    }
+
+    toJson() {
+        //serialize
+
+        var json = {
+            version: StarForgeModel.FILE_FORMAT_VERSION,
+            gridW: this.gridW,
+            gridH: this.gridH,
+            modules: []
+        }
+
+        for (module in this.modules) {
+            json.modules.push(module.type)
+        }
+    }
+
+    // Returns index (into the modules array) of the FIRST node of the given type, or -1 if not found
+    findNodeType(nodeType) {
         for (let i = 0; i < this.modules.length; i++) {
-            if (this.modules[i].type === StarForgeModel.TYPE_FORGE) {
+            if (this.modules[i].type === nodeType) {
                 return i;
             }
         }
         return -1; // Return -1 if no forge node is found
+    }
+
+    // Returns an array with indexes (into the modules array) of the nodes of the given type
+    findAllNodesOfType(nodeType) {
+        var result = []
+        for (let i = 0; i < this.modules.length; i++) {
+            if (this.modules[i].type === nodeType) {
+                result.push(i)
+            }
+        }
+        return result
     }
 
     // Get index (into modules array) of neighbors of a node at given index
@@ -119,16 +182,16 @@ class StarForgeModel
         }
 
         // Check if the current node can connect in the specified direction
-        let canFromConnect = false;
-        if (fromType === StarForgeModel.TYPE_INPUT || fromType === StarForgeModel.TYPE_OUTPUT || fromType === StarForgeModel.TYPE_FORGE) {
+        let canConnectFrom = false;
+        if (fromType === StarForgeModel.TYPE_FORGE || fromType === StarForgeModel.TYPE_INPUT) {
             // INPUT, OUTPUT, and FORGE nodes can connect in any direction
-            canFromConnect = true;
+            canConnectFrom = true;
         } else {
             // For pipe nodes, check if they can connect in this direction
-            canFromConnect = this.canPipeConnect(fromType, direction);
+            canConnectFrom = this.canPipeConnect(fromType, direction);
         }
 
-        if (!canFromConnect) {
+        if (!canConnectFrom) {
             return false;
         }
 
@@ -177,7 +240,7 @@ class StarForgeModel
 
     validateForgeGraph() {
         // Find the forge node
-        const forgeIndex = this.findForgeNode();
+        const forgeIndex = this.findNodeType(StarForgeModel.TYPE_FORGE);
         if (forgeIndex === -1) {
             return false; // No forge node found
         }
@@ -187,6 +250,18 @@ class StarForgeModel
         const canReachOutput = this.canReachType(forgeIndex, StarForgeModel.TYPE_OUTPUT);
 
         return canReachInput && canReachOutput;
+    }
+
+    validateGraphFromInputNode(inputNodeIndex) {
+        // Ensure given node exists as input to start
+        var inputNode = this.modules[inputNodeIndex]
+        if (inputNode == null || inputNode.type != StarForgeModel.TYPE_INPUT) {
+            // Input node graph is not valid, because given start node is not an Input node
+            return false
+        }
+
+
+
     }
 
 }

@@ -174,7 +174,8 @@ class StarForgeEditorView extends NodeView {
 
             const moduleIndex = i
             moduleView.setClick((e)=>{
-                EventBus.ui.dispatch({ evtName: "starForgeEditorModuleClicked", moduleIndex: moduleIndex })
+                const mouseBtn = e.button
+                EventBus.ui.dispatch({ evtName: "starForgeEditorModuleClicked", moduleIndex: moduleIndex, mouseBtn:mouseBtn })
             })
 
             this.moduleRoot.addChild(moduleView)
